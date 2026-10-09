@@ -1,1 +1,1 @@
-# SóCraques utilizes Python standard library with 0 external node/python package dependencies.
+legacy-cgi>=2.6.0

@@ -7,7 +7,13 @@ import subprocess
 import shutil
 import mimetypes
 import urllib.parse
-import cgi
+try:
+    import cgi
+except ImportError:
+    try:
+        import legacy_cgi as cgi
+    except ImportError:
+        cgi = None
 import time
 import datetime
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
@@ -652,6 +658,9 @@ class PitchStatHandler(SimpleHTTPRequestHandler):
             self.send_json({"error": "Endpoint not found"}, 404)
 
     def handle_upload_match_videos(self):
+        if not cgi:
+            self.send_json({"error": "Video upload module not available on this Python runtime."}, 500)
+            return
         conn = get_db()
         cursor = conn.cursor()
         try:
