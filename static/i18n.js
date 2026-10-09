@@ -543,6 +543,7 @@ const I18N = {
   },
 
   setLanguage(lang) {
+    if (lang === 'pt') lang = 'pt-br';
     if (!this.translations[lang]) return;
     this.currentLang = lang;
     localStorage.setItem('pitchstat_lang', lang);

@@ -1,717 +1,971 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html class="dark" lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SóCraques | Video Goal Tracker & Leaderboards</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>SóCraques Pickup Match Tracker - Seleção Canarinho Edition</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  
+  <!-- Material Symbols Outlined -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="style.css">
-  <script src="i18n.js"></script>
-  <script>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
     tailwind.config = {
-      darkMode: 'class',
+      darkMode: "class",
       theme: {
         extend: {
           colors: {
-            brand: {
-              50: '#ecfdf5',
-              400: '#34d399',
-              500: '#10b981',
-              600: '#059669',
-              700: '#047857'
-            },
-            pitch: '#0d1f14'
+            "pitch-base": "#040916",
+            "canarinho-navy": "#060D20",
+            "surface-container-lowest": "#060D20",
+            "surface-container-low": "#0B1733",
+            "surface-container": "#141B2E",
+            "surface-container-high": "#1B2848",
+            "surface-container-highest": "#24335C",
+            "outline-border": "#1A2E5A",
+            "canarinho-yellow": "#FFDF00",
+            "canarinho-green": "#009B3A",
+            "canarinho-blue": "#002776",
+            "canarinho-cyan": "#00C2FF"
           },
           fontFamily: {
             sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace']
+            mono: ['"JetBrains Mono"', 'monospace'],
+            headline: ['"Plus Jakarta Sans"', 'sans-serif'],
+            code: ['"JetBrains Mono"', 'monospace']
           }
         }
       }
-    }
+    };
   </script>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="i18n.js"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-brand-500 selection:text-black">
+<body class="bg-[#040916] font-sans text-white antialiased selection:bg-[#FFDF00] selection:text-[#060D20]">
 
-  <!-- Top Navigation Header -->
-  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-slate-950 font-black text-xl">
+  <!-- Fixed Top Header & Navigation -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[#060D20]/95 backdrop-blur-xl border-b border-[#002776]/50 shadow-[0_4px_30px_rgba(0,155,58,0.15)]">
+    <div class="h-16 w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+      
+      <!-- Brandmark & Pill -->
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#009B3A] via-emerald-500 to-[#FFDF00] flex items-center justify-center font-black text-xl shadow-[0_0_12px_rgba(255,223,0,0.35)] text-[#060D20]">
           ⚽
         </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">SóCraques</span>
-            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Pickup Match Tracker</span>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1.5">
+            <span class="font-extrabold text-lg text-white tracking-tight">Só<span class="text-[#FFDF00]">Craques</span></span>
+            <span class="text-xs">🇧🇷</span>
           </div>
+          <span class="text-[10px] text-[#FFDF00] font-mono tracking-wider uppercase bg-[#0B1733] px-2 py-0.5 rounded border border-[#FFDF00]/40 shadow-[0_0_8px_rgba(255,223,0,0.25)] w-fit font-bold">PICKUP MATCH TRACKER</span>
         </div>
       </div>
 
-      <!-- App Tabs -->
-      <nav class="flex items-center gap-1 sm:gap-2">
+      <!-- Navigation Tabs -->
+      <nav class="hidden md:flex items-center gap-2 bg-[#060D20] p-1 rounded-xl border border-[#1A2E5A]">
         <button onclick="switchTab('match')" id="tab-btn-match" class="nav-tab active">
-          <i data-lucide="video" class="w-4 h-4"></i>
-          <span>Match Studio</span>
+          <span class="material-symbols-outlined text-[18px]">videocam</span>
+          <span data-i18n="nav_studio">Match Studio</span>
         </button>
         <button onclick="switchTab('leaderboard')" id="tab-btn-leaderboard" class="nav-tab">
-          <i data-lucide="trophy" class="w-4 h-4"></i>
-          <span>Leaderboard</span>
+          <span class="material-symbols-outlined text-[18px]">leaderboard</span>
+          <span data-i18n="nav_leaderboard">Leaderboard</span>
         </button>
         <button onclick="switchTab('players')" id="tab-btn-players" class="nav-tab">
-          <i data-lucide="users" class="w-4 h-4"></i>
+          <span class="material-symbols-outlined text-[18px]">groups</span>
           <span data-i18n="nav_players">Players</span>
         </button>
       </nav>
 
-      <!-- Quick Actions & Language Selector -->
-      <div class="flex items-center gap-2">
-        <select onchange="changeLanguage(this.value)" class="lang-selector-select bg-slate-900 border border-slate-800 text-slate-300 text-xs font-bold rounded-xl px-2 py-1.5 focus:outline-none">
-          <option value="en">🇺🇸 EN</option>
-          <option value="pt-br">🇧🇷 PT</option>
-          <option value="fr">🇫🇷 FR</option>
-          <option value="es">🇪🇸 ES</option>
-        </select>
-        <a href="/live" class="px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 transition flex items-center gap-1.5 shadow-sm">
-          <i data-lucide="smartphone" class="w-3.5 h-3.5 text-emerald-400"></i>
-          <span data-i18n="nav_live">Sideline Live 🔒</span>
+      <!-- Right Controls: Status Pill, Language Selector, Sideline Live, Profile -->
+      <div class="flex items-center gap-3 shrink-0">
+        <!-- 2-Phone Cam Active Status Pill -->
+        <div class="hidden xl:flex items-center gap-2 bg-[#0B1733] px-3 py-1.5 rounded-full border border-[#009B3A]/40 shadow-[0_0_10px_rgba(0,155,58,0.25)]">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#009B3A] opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-[#009B3A]"></span>
+          </span>
+          <span class="font-mono text-xs text-[#009B3A] font-bold">2-Phone Cam Active</span>
+        </div>
+
+        <!-- Language Selector Dropdown -->
+        <div class="relative hidden sm:block">
+          <select onchange="changeLanguage(this.value)" class="lang-selector-select appearance-none bg-[#0B1733] hover:bg-[#14234C] text-white font-mono text-xs py-1.5 pl-3 pr-7 rounded-lg border border-[#1A2E5A] cursor-pointer focus:outline-none focus:border-[#FFDF00] transition">
+            <option value="pt" selected>🇧🇷 PT (Brasil)</option>
+            <option value="en">🇺🇸 EN</option>
+            <option value="es">🇪🇸 ES</option>
+            <option value="fr">🇫🇷 FR</option>
+          </select>
+          <span class="material-symbols-outlined pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">expand_more</span>
+        </div>
+
+        <!-- Sideline Live Lock Button -->
+        <a href="/live" class="flex items-center gap-1.5 bg-[#0B1733] hover:bg-[#14234C] px-3.5 py-1.5 rounded-lg border border-[#FFDF00]/40 text-[#FFDF00] text-xs font-bold hover:border-[#FFDF00] shadow-[0_0_10px_rgba(255,223,0,0.15)] transition">
+          <span>Sideline Live</span>
+          <span class="material-symbols-outlined text-[16px]">lock</span>
         </a>
+
+        <!-- User Profile Avatar -->
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FFDF00] to-yellow-300 text-[#060D20] flex items-center justify-center shrink-0 font-bold shadow-md cursor-pointer">
+          <span class="material-symbols-outlined text-[#060D20] text-[18px]">person</span>
+        </div>
       </div>
+
     </div>
   </header>
 
-  <!-- Main Content Container -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <!-- Main Body Content -->
+  <main class="w-full pt-16 min-h-screen">
 
-    <!-- ========================================== -->
-    <!-- TAB 1: MATCH STUDIO (DUAL CAMERA & CLIPPING) -->
-    <!-- ========================================== -->
-    <div id="tab-match" class="tab-pane active space-y-6">
-
-      <!-- Match Banner / Info Bar (No team names) -->
-      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800/80 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
-        <div class="flex items-center gap-4">
-          <div class="px-3 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            2-Phone Cam Active
+    <!-- Top Match Session Status Bar (Canarinho Telemetry) -->
+    <section class="w-full px-4 sm:px-6 lg:px-8 py-4 bg-[#060D20]/80 border-b border-[#002776]/40 backdrop-blur-md">
+      <div class="max-w-[1720px] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        
+        <!-- Context & Details -->
+        <div class="flex flex-col gap-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-2 bg-[#0B1733] px-3 py-1 rounded-full border border-[#009B3A]/50 shadow-[0_0_12px_rgba(0,155,58,0.3)]">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#009B3A] opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-[#009B3A]"></span>
+              </span>
+              <span class="font-mono text-[11px] text-[#009B3A] tracking-wider uppercase font-extrabold">2-Phone Cam Active</span>
+            </div>
+            <span class="text-gray-600 font-mono text-xs hidden sm:inline">•</span>
+            <span class="font-mono text-xs text-gray-300">Pitch 04 • Synthetic Cage (Maracanã Turf)</span>
+            <span class="text-gray-600 font-mono text-xs hidden sm:inline">•</span>
+            <span class="font-mono text-xs text-[#FFDF00] bg-[#0B1733] border border-[#FFDF00]/30 px-2 py-0.5 rounded font-bold">4K · 60 FPS ProRes</span>
           </div>
-          <div>
-            <h1 id="match-title" class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-              Pickup Match Studio
+
+          <div class="flex flex-wrap items-baseline gap-3 mt-1">
+            <h1 id="match-title-heading" class="text-xl sm:text-2xl text-white tracking-tight font-extrabold m-0">
+              Pickup Match Studio <span class="text-[#FFDF00] font-black">Canarinho</span>
             </h1>
-            <p id="match-meta" class="text-xs text-slate-400">2026 Season • Logged Goals & Highlight Clips</p>
+            <p id="match-meta" class="text-xs text-gray-300 m-0">
+              Match Date: <span id="match-date-display" class="text-white font-semibold">2026-10-08</span> • 2026 Season • 
+              <span id="match-goals-badge" class="text-[#FFDF00] font-bold bg-[#FFDF00]/10 px-2 py-0.5 rounded border border-[#FFDF00]/30">⚽ 3 Goals Logged</span> • 
+              <span id="match-nutmegs-badge" class="text-[#00C2FF] font-bold bg-[#002776]/40 px-2 py-0.5 rounded border border-[#00C2FF]/30">🪄 1 Caneta</span>
+            </p>
           </div>
         </div>
 
-        <!-- Quick Actions: Upload Button Only (No Total Goals display) -->
-        <div>
-          <button onclick="openVideoUploadModal()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-blue-500/20 transition">
-            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+        <!-- Session Actions: Match Sheet & Upload Videos -->
+        <div class="flex items-center gap-3 shrink-0">
+          <button onclick="openMatchSheetModal()" id="quickStatsBtn" class="flex items-center gap-2 bg-[#0B1733] hover:bg-[#14234C] border border-[#1A2E5A] px-4 py-2 rounded-xl text-gray-200 hover:text-white text-xs font-bold transition shadow-sm">
+            <span class="material-symbols-outlined text-[#FFDF00] text-[18px]">sports_soccer</span>
+            <span>Match Sheet</span>
+          </button>
+          <button onclick="openVideoUploadModal()" id="uploadModalTrigger" class="flex items-center gap-2 bg-gradient-to-r from-[#FFDF00] via-yellow-400 to-amber-400 text-[#060D20] text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-[#FFDF00]/25 hover:shadow-[#FFDF00]/45 hover:scale-[1.02] active:scale-[0.99] transition">
+            <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
             <span data-i18n="upload_videos_btn">Upload Videos (Cam 1 & 2)</span>
           </button>
         </div>
+
       </div>
+    </section>
 
-      <!-- Video Studio Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- ======================================================== -->
+    <!-- TAB 1: MATCH STUDIO (DUAL CAMERA & TACTICAL CLIPPING)    -->
+    <!-- ======================================================== -->
+    <div id="tab-match" class="tab-pane active w-full px-4 sm:px-6 lg:px-8 py-6">
+      <div class="max-w-[1720px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        
+        <!-- LEFT: Video Deck, Multi-Angle Selector & Scrubber (8 Cols) -->
+        <div class="xl:col-span-8 flex flex-col gap-5 min-w-0">
+          
+          <!-- Top Camera Angle & Sync Calibration Bar -->
+          <div class="bg-[#0B1733] border border-[#1A2E5A] rounded-2xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+            <!-- Camera Angle Switcher -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-[11px] uppercase tracking-wider text-gray-400 mr-1 font-semibold">Active Angle:</span>
+              <button id="cam-btn-a" onclick="switchCamera('a')" class="cam-toggle-btn active flex items-center gap-2 bg-[#FFDF00] text-[#060D20] px-4 py-1.5 rounded-lg text-xs shadow-md font-bold transition">
+                <span class="relative flex h-2.5 w-2.5">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#009B3A] opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#009B3A]"></span>
+                </span>
+                <span class="font-extrabold">Phone 1: Midfield Cam</span>
+                <span class="bg-[#060D20] text-[#FFDF00] px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">Primary</span>
+              </button>
 
-        <!-- Left / Center: Video Player (8 Cols) -->
-        <div class="lg:col-span-8 space-y-4">
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl relative overflow-hidden">
-            <!-- Camera Toggle Bar -->
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Angle:</span>
-                <div class="inline-flex p-1 bg-slate-950 rounded-xl border border-slate-800">
-                  <button id="cam-btn-a" onclick="switchCamera('a')" class="cam-toggle-btn active">
-                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                    <span>Phone 1: Midfield Cam</span>
-                  </button>
-                  <button id="cam-btn-b" onclick="switchCamera('b')" class="cam-toggle-btn">
-                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                    <span>Phone 2: Behind Net Cam</span>
-                  </button>
-                </div>
-              </div>
-
-              <div class="hidden sm:flex items-center gap-2 text-xs text-slate-400">
-                <span>Sync Offset:</span>
-                <input id="sync-offset-input" type="number" step="0.1" value="0.0" onchange="updateSyncOffset(this.value)" class="w-16 bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-center font-mono text-emerald-400 text-xs">
-                <span>sec</span>
-              </div>
+              <button id="cam-btn-b" onclick="switchCamera('b')" class="cam-toggle-btn flex items-center gap-2 bg-[#060D20] hover:bg-[#14234C] border border-[#1A2E5A] px-4 py-1.5 rounded-lg text-xs text-gray-300 hover:text-white transition">
+                <span class="inline-flex rounded-full h-2.5 w-2.5 bg-[#00C2FF]"></span>
+                <span>Phone 2: Behind Net Cam</span>
+                <span class="bg-[#0B1733] px-1.5 py-0.5 rounded font-mono text-[10px] text-gray-400">Goal Line</span>
+              </button>
             </div>
 
-            <!-- Video Display Stage -->
-            <div class="relative aspect-video bg-black rounded-xl overflow-hidden border border-slate-800/80 shadow-inner group">
-              <video id="video-a" class="w-full h-full object-contain absolute inset-0 z-10" playsinline preload="auto"></video>
-              <video id="video-b" class="w-full h-full object-contain absolute inset-0 z-0 opacity-0 pointer-events-none" playsinline preload="auto"></video>
-
-              <!-- Empty State Overlay (Shown when no video loaded) -->
-              <div id="no-video-overlay" class="absolute inset-0 z-30 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center space-y-3">
-                <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-inner">
-                  <i data-lucide="video" class="w-7 h-7"></i>
+            <!-- Micro-Calibration Stepper & Hardware Indicator -->
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-2 bg-[#060D20] border border-[#1A2E5A] px-3 py-1 rounded-lg">
+                <span class="font-mono text-[11px] text-gray-400 uppercase font-semibold">Sync Offset:</span>
+                <div class="flex items-center gap-1">
+                  <button onclick="stepSyncOffset(-0.25)" class="w-5 h-5 rounded flex items-center justify-center bg-[#14234C] hover:bg-[#FFDF00] hover:text-[#060D20] text-white text-[12px] font-bold transition">−</button>
+                  <input id="sync-offset-input" type="text" value="0.00" readonly class="w-12 bg-transparent text-center font-mono text-xs text-[#FFDF00] font-extrabold focus:outline-none"/>
+                  <button onclick="stepSyncOffset(0.25)" class="w-5 h-5 rounded flex items-center justify-center bg-[#14234C] hover:bg-[#FFDF00] hover:text-[#060D20] text-white text-[12px] font-bold transition">+</button>
                 </div>
-                <div>
-                  <h3 class="text-sm sm:text-base font-bold text-white" data-i18n="no_video_title">No Game Footage Loaded</h3>
-                  <p class="text-xs text-slate-400 max-w-sm mt-1" data-i18n="no_video_desc">Upload Camera 1 and Camera 2 videos from your phones or select files from your Mac to start tracking.</p>
-                </div>
-                <button onclick="openVideoUploadModal()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-blue-500/20 transition">
-                  <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                  <span data-i18n="upload_videos_btn">Upload Videos (Cam 1 & 2)</span>
-                </button>
+                <span class="font-mono text-[11px] text-gray-400">sec</span>
               </div>
-
-              <!-- Watermark HUD -->
-              <div id="video-hud" class="absolute top-3 left-3 z-20 pointer-events-none flex items-center gap-2 hidden">
-                <span id="current-cam-tag" class="px-2.5 py-1 rounded bg-black/80 backdrop-blur-md border border-white/10 text-[11px] font-mono font-bold text-white uppercase flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-                  PHONE 1 • MIDFIELD
-                </span>
-                <span id="video-timer-badge" class="px-2 py-1 rounded bg-black/80 backdrop-blur-md border border-white/10 text-[11px] font-mono text-yellow-400 font-bold">
-                  00:00.0
-                </span>
-              </div>
-
-              <!-- Goal Alert Banner -->
-              <div id="goal-alert-banner" class="absolute inset-x-0 bottom-4 z-20 flex justify-center opacity-0 transition-opacity duration-300 pointer-events-none">
-                <div class="bg-emerald-600/90 text-white font-extrabold px-4 py-2 rounded-xl backdrop-blur-md shadow-2xl flex items-center gap-2 text-sm border border-emerald-400/40">
-                  <span>⚽</span> GOAL!
-                </div>
-              </div>
-            </div>
-
-            <!-- Controls & Timeline -->
-            <div class="mt-4 space-y-3">
-              <div class="space-y-1.5">
-                <div class="flex justify-between text-xs font-mono text-slate-400">
-                  <span id="time-current">00:00</span>
-                  <span class="text-emerald-400 font-bold text-[11px] uppercase tracking-wider flex items-center gap-1">
-                    <i data-lucide="sparkles" class="w-3 h-3"></i> Click timeline pins to jump to goals
-                  </span>
-                  <span id="time-duration">01:00</span>
-                </div>
-                
-                <div class="relative w-full h-6 flex items-center">
-                  <input id="timeline-scrubber" type="range" min="0" max="60" step="0.1" value="0" oninput="onScrub(this.value)" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 z-10">
-                  <div id="timeline-markers-container" class="absolute inset-x-0 h-full pointer-events-none z-20 flex items-center"></div>
-                </div>
-              </div>
-
-              <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
-                <div class="flex items-center gap-2">
-                  <button id="play-pause-btn" onclick="togglePlay()" class="w-10 h-10 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold flex items-center justify-center transition shadow-lg shadow-emerald-500/20">
-                    <i data-lucide="play" class="w-5 h-5 fill-current"></i>
-                  </button>
-                  <button onclick="stepSeconds(-5)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1">
-                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> -5s
-                  </button>
-                  <button onclick="stepSeconds(5)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1">
-                    <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> +5s
-                  </button>
-                  <span class="text-xs text-slate-500 ml-2 hidden sm:inline">Speed:</span>
-                  <button onclick="cyclePlaybackRate()" id="speed-btn" class="px-2.5 py-1 rounded-md bg-slate-800 text-xs font-mono font-semibold text-slate-300">
-                    1.0x
-                  </button>
-                </div>
-
-                <button onclick="openGoalTagModal()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/30 transition transform active:scale-95">
-                  <span class="text-base">⚽</span>
-                  <span>Tag Goal at <span id="tag-current-time-btn" class="font-mono underline">00:00</span></span>
-                </button>
+              <div class="hidden sm:flex items-center gap-1.5 text-gray-300 font-mono text-xs">
+                <span class="material-symbols-outlined text-[16px] text-[#009B3A]">sync</span>
+                <span>Synced at 00:00:00</span>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Right: Goal Feed (4 Cols) -->
-        <div class="lg:col-span-4 space-y-4">
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col h-[520px]">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <!-- High-Fidelity 16:9 Video Monitor Deck -->
+          <div class="relative bg-[#040916] rounded-2xl overflow-hidden shadow-2xl flex flex-col group aspect-video border border-[#002776]/60">
+            
+            <!-- Real HTML5 Video Elements for Cam 1 & Cam 2 -->
+            <video id="video-a" class="absolute inset-0 w-full h-full object-cover z-10" playsinline preload="auto"></video>
+            <video id="video-b" class="absolute inset-0 w-full h-full object-cover z-0 opacity-0 pointer-events-none" playsinline preload="auto"></video>
+
+            <!-- Tactical Pitch SVG HUD Overlay: Golden & Emerald Green Lines -->
+            <svg class="absolute inset-0 w-full h-full opacity-40 pointer-events-none z-15" fill="none" preserveAspectRatio="none" viewBox="0 0 1200 675">
+              <!-- Center Circle & Midfield Line -->
+              <line opacity="0.8" stroke="#FFDF00" stroke-dasharray="8 6" stroke-width="1.8" x1="600" x2="600" y1="0" y2="675"></line>
+              <circle cx="600" cy="337.5" fill="none" opacity="0.75" r="110" stroke="#009B3A" stroke-dasharray="6 6" stroke-width="2"></circle>
+              <circle cx="600" cy="337.5" fill="#FFDF00" r="5"></circle>
+              <!-- Penalty Areas -->
+              <rect fill="none" height="339" opacity="0.6" stroke="#FFDF00" stroke-width="1.5" width="180" x="0" y="168"></rect>
+              <rect fill="none" height="339" opacity="0.6" stroke="#FFDF00" stroke-width="1.5" width="180" x="1020" y="168"></rect>
+              <!-- Goal Posts Indicators -->
+              <rect fill="#009B3A" height="135" opacity="0.3" width="40" x="0" y="270"></rect>
+              <rect fill="#009B3A" height="135" opacity="0.3" width="40" x="1160" y="270"></rect>
+            </svg>
+
+            <!-- Broadcast Vignette Overlay -->
+            <div class="absolute inset-0 bg-gradient-to-t from-[#040916] via-transparent to-[#040916]/80 pointer-events-none z-15"></div>
+
+            <!-- Empty State Overlay (Shown only if no video is loaded) -->
+            <div id="no-video-overlay" class="absolute inset-0 z-25 bg-[#060D20]/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center space-y-3 hidden">
+              <div class="w-14 h-14 rounded-2xl bg-[#FFDF00]/10 border border-[#FFDF00]/30 flex items-center justify-center text-[#FFDF00] shadow-inner">
+                <span class="material-symbols-outlined text-[32px]">videocam</span>
+              </div>
               <div>
-                <h2 class="text-sm font-bold text-white flex items-center gap-2">
-                  <i data-lucide="flag" class="w-4 h-4 text-emerald-400"></i>
-                  Match Goals & Highlights
-                </h2>
-                <p class="text-xs text-slate-400" id="goal-count-subtitle">0 goals recorded</p>
+                <h3 class="text-base font-bold text-white">Nenhum Vídeo Carregado</h3>
+                <p class="text-xs text-gray-400 max-w-sm mt-1">Carregue os vídeos das câmeras dos telefones para sincronizar e rever os lances.</p>
               </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700" data-i18n="clips_subtitle">20s Clips</span>
+              <button onclick="openVideoUploadModal()" class="px-4 py-2.5 rounded-xl bg-[#FFDF00] text-[#060D20] font-black text-xs flex items-center gap-2 shadow-lg shadow-[#FFDF00]/30 transition">
+                <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+                <span>Upload Videos (Cam 1 & 2)</span>
+              </button>
             </div>
 
-            <!-- Goals List -->
-            <div id="match-goals-list" class="flex-1 overflow-y-auto divide-y divide-slate-800/60 pr-1 mt-2 space-y-2">
-              <!-- Dynamically populated -->
+            <!-- Telemetry Top HUD inside Monitor -->
+            <div class="relative z-20 w-full p-3 sm:p-4 flex items-center justify-between pointer-events-none">
+              <div class="flex items-center gap-2 pointer-events-auto">
+                <div class="flex items-center gap-2 bg-[#060D20]/90 border border-[#002776] backdrop-blur-md px-3 py-1.5 rounded-lg shadow-md">
+                  <span class="w-2.5 h-2.5 rounded-full bg-[#009B3A] animate-pulse"></span>
+                  <span class="font-mono text-xs font-extrabold tracking-wider text-[#FFDF00] uppercase" id="current-cam-tag">PHONE 1 • MIDFIELD</span>
+                </div>
+                <div class="bg-[#060D20]/90 border border-[#FFDF00]/40 backdrop-blur-md px-3 py-1.5 rounded-lg font-mono text-xs text-[#FFDF00] font-black shadow-md">
+                  <span id="playerTimer">00:23.4</span>
+                </div>
+              </div>
+
+              <!-- Dynamic Goal/Caneta Alert Banner Overlay -->
+              <div id="eventOverlayBadge" class="flex items-center gap-2 bg-gradient-to-r from-[#FFDF00] to-yellow-300 text-[#060D20] border-2 border-[#009B3A] px-4 py-1.5 rounded-full text-xs font-black shadow-[0_0_20px_rgba(255,223,0,0.6)] animate-bounce pointer-events-auto">
+                <span class="material-symbols-outlined text-[18px] text-[#060D20] font-bold">sports_soccer</span>
+                <span id="eventOverlayText">⚽⚽ GOLAÇO! Paulo Andraus (0:09)</span>
+              </div>
             </div>
 
-            <div class="pt-3 border-t border-slate-800 text-center">
-              <p class="text-[11px] text-slate-500">Goals automatically update the Season Leaderboard & Player Cards.</p>
+            <!-- Center Watermark Play/Pause Focus Indicator -->
+            <div class="relative z-20 flex-1 flex items-center justify-center pointer-events-none">
+              <div id="centralPlayIndicator" class="w-16 h-16 rounded-full bg-[#FFDF00]/20 border-2 border-[#FFDF00] backdrop-blur-md flex items-center justify-center text-[#FFDF00] opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_24px_rgba(255,223,0,0.5)]">
+                <span class="material-symbols-outlined text-[36px]" id="centralPlayIcon">play_arrow</span>
+              </div>
             </div>
+
+            <!-- Tactical Telemetry Bottom HUD Bar -->
+            <div class="relative z-20 w-full px-4 py-2 flex items-center justify-between text-gray-300 font-mono text-[11px] bg-[#060D20]/90 border-t border-[#002776]/60 backdrop-blur-md">
+              <div class="flex items-center gap-4">
+                <span class="flex items-center gap-1 text-[#FFDF00] font-bold">
+                  <span class="material-symbols-outlined text-[14px]">videocam</span>
+                  <span>Wide 120° Optical</span>
+                </span>
+                <span>Bitrate: 82 Mbps</span>
+                <span class="hidden sm:inline">Color Profile: HLG Rec.2020</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-gray-300">AI Tracker: <span class="text-[#009B3A] font-bold bg-[#009B3A]/20 px-1.5 py-0.5 rounded border border-[#009B3A]/40">LOCKED (10 Craques + Ball)</span></span>
+                <button onclick="toggleVideoFullscreen()" class="hover:text-[#FFDF00] transition-colors" title="Full Screen">
+                  <span class="material-symbols-outlined text-[16px]">fullscreen</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Precision Interactive Scrubber & Timeline Panel -->
+          <div class="bg-[#0B1733] border border-[#1A2E5A] rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-xl">
+            <!-- Timeline Header & Time Bounds -->
+            <div class="flex items-center justify-between text-gray-300 font-mono text-xs">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[#FFDF00] text-[18px]">timer</span>
+                <span class="text-white font-black" id="time-current">00:23</span>
+                <span class="text-gray-400">/ <span id="time-duration">01:00</span></span>
+              </div>
+              <div class="flex items-center gap-1.5 text-[#FFDF00] font-mono text-[11px] tracking-wider uppercase font-bold">
+                <span class="material-symbols-outlined text-[14px] text-[#FFDF00]">auto_awesome</span>
+                <span>CLIQUE NOS PINOS PARA PULAR PROS GOLS</span>
+              </div>
+              <span class="text-gray-400 font-mono text-xs" id="time-duration-right">01:00</span>
+            </div>
+
+            <!-- Scrubber Rail with Dynamic Highlight Pins -->
+            <div class="relative w-full py-3 select-none cursor-pointer" id="timelineContainer">
+              <!-- Base Rail -->
+              <div class="w-full h-3.5 bg-[#060D20] border border-[#1A2E5A] rounded-full overflow-hidden relative shadow-inner">
+                <!-- Played Track Gradient: Canarinho Yellow -> Pitch Green -> Royal Blue -->
+                <div class="h-full bg-gradient-to-r from-[#FFDF00] via-[#009B3A] to-blue-600 rounded-full transition-all duration-75 shadow-[0_0_12px_rgba(255,223,0,0.5)]" id="timelineProgress" style="width: 38%;"></div>
+              </div>
+
+              <!-- Glowing Canary Yellow Scrubber Head -->
+              <div class="absolute top-1/2 -translate-y-1/2 -ml-3 w-6 h-6 rounded-full bg-white border-2 border-[#060D20] shadow-[0_0_16px_rgba(255,223,0,1)] cursor-grab active:cursor-grabbing flex items-center justify-center transition-transform hover:scale-125 z-25" id="scrubberHead" style="left: 38%;">
+                <div class="w-3 h-3 rounded-full bg-[#FFDF00] ring-2 ring-[#009B3A]"></div>
+              </div>
+
+              <!-- Event Pins Container (Dynamic + Pre-rendered) -->
+              <div id="timeline-markers-container" class="absolute inset-0 pointer-events-none">
+                <!-- Pin 1: 0:09 Goal -->
+                <button onclick="seekToGoal(9)" class="timeline-pin group pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center focus:outline-none" style="left: 15%;">
+                  <div class="w-7 h-7 rounded-full bg-[#FFDF00] text-[#060D20] ring-2 ring-[#009B3A] flex items-center justify-center shadow-lg group-hover:scale-125 transition-transform">
+                    <span class="text-[12px] font-bold">⚽</span>
+                  </div>
+                  <span class="absolute -bottom-6 font-mono text-[10px] text-[#FFDF00] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-[#060D20] border border-[#FFDF00]/40 px-1.5 py-0.5 rounded">0:09 Gol</span>
+                </button>
+
+                <!-- Pin 2: 0:23 Nutmeg (Caneta) -->
+                <button onclick="seekToGoal(23)" class="timeline-pin group pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center focus:outline-none" style="left: 38%;">
+                  <div class="w-7 h-7 rounded-full bg-[#002776] text-white ring-2 ring-[#00C2FF] flex items-center justify-center shadow-lg group-hover:scale-125 transition-transform">
+                    <span class="text-[12px]">🪄</span>
+                  </div>
+                  <span class="absolute -bottom-6 font-mono text-[10px] text-[#00C2FF] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-[#060D20] border border-[#00C2FF]/40 px-1.5 py-0.5 rounded">0:23 Caneta</span>
+                </button>
+
+                <!-- Pin 3: 0:42 / 1:19 Goal -->
+                <button onclick="seekToGoal(79)" class="timeline-pin group pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center focus:outline-none" style="left: 70%;">
+                  <div class="w-7 h-7 rounded-full bg-[#FFDF00] text-[#060D20] ring-2 ring-[#009B3A] flex items-center justify-center shadow-lg group-hover:scale-125 transition-transform">
+                    <span class="text-[12px] font-bold">⚽</span>
+                  </div>
+                  <span class="absolute -bottom-6 font-mono text-[10px] text-[#FFDF00] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-[#060D20] border border-[#FFDF00]/40 px-1.5 py-0.5 rounded">1:19 Gol</span>
+                </button>
+
+                <!-- Pin 4: 0:54 / 1:35 Goal -->
+                <button onclick="seekToGoal(95)" class="timeline-pin group pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center focus:outline-none" style="left: 90%;">
+                  <div class="w-7 h-7 rounded-full bg-[#FFDF00] text-[#060D20] ring-2 ring-[#009B3A] flex items-center justify-center shadow-lg group-hover:scale-125 transition-transform">
+                    <span class="text-[12px] font-bold">⚽</span>
+                  </div>
+                  <span class="absolute -bottom-6 font-mono text-[10px] text-[#FFDF00] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-[#060D20] border border-[#FFDF00]/40 px-1.5 py-0.5 rounded">1:35 Gol</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Transport Bar & Hero Primary CTA Button -->
+            <div class="flex flex-wrap items-center justify-between gap-4 pt-1">
+              <!-- Playback Controls -->
+              <div class="flex items-center gap-2">
+                <button id="play-pause-btn" onclick="togglePlay()" class="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#FFDF00] to-yellow-300 text-[#060D20] flex items-center justify-center font-black shadow-lg shadow-[#FFDF00]/30 hover:scale-105 active:scale-95 transition">
+                  <span class="material-symbols-outlined text-[28px] font-bold">play_arrow</span>
+                </button>
+                <button onclick="stepSeconds(-5)" class="flex items-center gap-1 bg-[#060D20] hover:bg-[#14234C] border border-[#1A2E5A] px-3.5 py-2.5 rounded-lg text-white font-mono text-xs shadow-sm transition">
+                  <span class="material-symbols-outlined text-[16px]">replay_5</span>
+                  <span>-5s</span>
+                </button>
+                <button onclick="stepSeconds(5)" class="flex items-center gap-1 bg-[#060D20] hover:bg-[#14234C] border border-[#1A2E5A] px-3.5 py-2.5 rounded-lg text-white font-mono text-xs shadow-sm transition">
+                  <span class="material-symbols-outlined text-[16px]">forward_5</span>
+                  <span>+5s</span>
+                </button>
+
+                <!-- Speed Selector Dropdown -->
+                <div class="relative ml-1">
+                  <select onchange="setPlaybackRate(parseFloat(this.value))" id="playbackSpeedSelect" class="appearance-none bg-[#060D20] hover:bg-[#14234C] border border-[#1A2E5A] text-white font-mono text-xs py-2.5 pl-3 pr-8 rounded-lg cursor-pointer focus:outline-none focus:border-[#FFDF00]">
+                    <option value="0.5">Speed: 0.5x</option>
+                    <option value="1.0" selected>Speed: 1.0x</option>
+                    <option value="1.5">Speed: 1.5x</option>
+                    <option value="2.0">Speed: 2.0x</option>
+                  </select>
+                  <span class="material-symbols-outlined pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">expand_more</span>
+                </div>
+              </div>
+
+              <!-- Canary Yellow Primary Hero Action CTA Button -->
+              <button onclick="openGoalTagModal()" id="tagGoalHeroBtn" class="flex items-center gap-2.5 bg-gradient-to-r from-[#FFDF00] via-yellow-400 to-[#FFDF00] text-[#060D20] font-black px-6 py-3 rounded-xl shadow-xl shadow-[#FFDF00]/40 hover:shadow-[#FFDF00]/60 hover:scale-[1.03] active:scale-[0.98] transition border-2 border-yellow-200">
+                <span class="text-[20px]">⚽</span>
+                <span>Tag Goal at <span class="font-mono text-sm font-black" id="btnCurrentTimestamp">00:23</span></span>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- RIGHT: Match Goals & Highlights Feed (4 Cols) -->
+        <aside class="xl:col-span-4 flex flex-col gap-4 min-w-0">
+          
+          <div class="bg-[#0B1733] border border-[#1A2E5A] rounded-2xl p-4 sm:p-5 flex flex-col gap-5 shadow-xl">
+            <!-- Feed Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-[#1A2E5A]">
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2">
+                  <span class="text-[18px]">🚩</span>
+                  <h2 class="text-sm sm:text-base font-extrabold text-white m-0">
+                    Match Goals &amp; Highlights
+                  </h2>
+                </div>
+                <span class="font-mono text-xs text-gray-300 mt-1" id="goal-count-subtitle">
+                  <span class="text-[#FFDF00] font-bold">3 goals</span> recorded • <span class="text-[#00C2FF] font-bold">1 caneta</span>
+                </span>
+              </div>
+              <div class="flex items-center gap-1 bg-[#060D20] border border-[#1A2E5A] px-2.5 py-1 rounded-lg text-[#FFDF00] font-mono text-xs font-semibold">
+                <span class="material-symbols-outlined text-[14px]">movie_filter</span>
+                <span>20s Clips</span>
+              </div>
+            </div>
+
+            <!-- Goals & Canetas Cards Feed List -->
+            <div id="match-goals-list" class="flex flex-col gap-3 max-h-[460px] overflow-y-auto pr-1">
+              <!-- Dynamically populated or filled from DB -->
+            </div>
+
+            <!-- Sidebar Footer Notice -->
+            <div class="pt-2 flex items-center gap-2 text-gray-400 font-sans text-xs border-t border-[#1A2E5A]">
+              <span class="material-symbols-outlined text-[16px] text-[#FFDF00]">sync_saved_locally</span>
+              <span>Goals automatically update the Season Leaderboard &amp; Player Cards.</span>
+            </div>
+          </div>
+
+          <!-- Mini Leaderboard Top Scorer Widget -->
+          <div class="bg-[#0B1733] border border-[#1A2E5A] rounded-2xl p-4 flex items-center justify-between shadow-lg">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-[#FFDF00] text-[#060D20] flex items-center justify-center font-bold shadow-md">
+                <span class="material-symbols-outlined text-[22px]">leaderboard</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-white">Top Scorer Standings</span>
+                <span class="font-mono text-xs text-[#FFDF00] font-semibold" id="miniLeaderboardText">Paulo Andraus leads with 2 pts</span>
+              </div>
+            </div>
+            <button onclick="switchTab('leaderboard')" class="font-mono text-xs text-[#FFDF00] hover:text-yellow-300 font-bold flex items-center gap-1 transition">
+              <span>View All</span>
+              <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </button>
+          </div>
+
+        </aside>
+
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: SEASON LEADERBOARD                                -->
+    <!-- ======================================================== -->
+    <div id="tab-leaderboard" class="tab-pane hidden w-full px-4 sm:px-6 lg:px-8 py-6">
+      <div class="max-w-[1720px] mx-auto flex flex-col gap-6">
+        
+        <!-- Header & Sorter -->
+        <div class="bg-[#0B1733] border border-[#1A2E5A] rounded-2xl p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+          <div>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl font-black text-white tracking-tight flex items-center gap-2 m-0">
+                🏆 Top Goal Scorers &amp; Playmakers
+              </h1>
+              <span class="px-2.5 py-0.5 rounded-full bg-[#FFDF00]/10 text-[#FFDF00] border border-[#FFDF00]/30 text-xs font-bold font-mono">2026 Season</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Goal and assist rankings across all games played.</p>
+          </div>
+
+          <div class="inline-flex p-1 bg-[#060D20] rounded-xl border border-[#1A2E5A] text-xs">
+            <button onclick="sortLeaderboard('goals')" id="btn-sort-goals" class="px-3.5 py-1.5 rounded-lg font-bold bg-[#FFDF00] text-[#060D20] transition">
+              ⚽ Most Goals
+            </button>
+            <button onclick="sortLeaderboard('assists')" id="btn-sort-assists" class="px-3.5 py-1.5 rounded-lg font-bold text-gray-400 hover:text-white transition">
+              🎯 Most Assists
+            </button>
+            <button onclick="sortLeaderboard('contributions')" id="btn-sort-contributions" class="px-3.5 py-1.5 rounded-lg font-bold text-gray-400 hover:text-white transition">
+              ⭐ G + A Total
+            </button>
+          </div>
+        </div>
+
+        <!-- Top 3 Podium Cards -->
+        <div id="podium-container" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Full Standings Table -->
+        <div class="bg-[#0B1733] border border-[#1A2E5A] rounded-2xl shadow-xl overflow-hidden">
+          <div class="px-5 py-4 border-b border-[#1A2E5A] flex items-center justify-between">
+            <h2 class="text-sm font-bold text-white flex items-center gap-2 m-0">
+              <span class="material-symbols-outlined text-[#FFDF00] text-[18px]">format_list_numbered</span>
+              Full Player Standings
+            </h2>
+            <span class="text-xs text-gray-400">Click any player to view their profile &amp; highlight clips</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-[#060D20] text-[11px] font-mono text-gray-400 uppercase tracking-wider border-b border-[#1A2E5A]">
+                <tr>
+                  <th class="py-3 px-4 w-12 text-center">Rank</th>
+                  <th class="py-3 px-4">Player</th>
+                  <th class="py-3 px-4 text-center font-bold text-[#FFDF00]">Goals ⚽</th>
+                  <th class="py-3 px-4 text-center text-[#00C2FF]">Assists 🎯</th>
+                  <th class="py-3 px-4 text-center font-bold text-[#009B3A]">G + A ⭐</th>
+                  <th class="py-3 px-4 text-center">Matches</th>
+                  <th class="py-3 px-4 text-right">Profile</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-table-body" class="divide-y divide-[#1A2E5A]/60 text-gray-200 font-sans">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
           </div>
         </div>
 
       </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- TAB 2: SEASON LEADERBOARD (TOP SCORERS)   -->
-    <!-- ========================================== -->
-    <div id="tab-leaderboard" class="tab-pane hidden space-y-6">
-
-      <!-- Leaderboard Header -->
-      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 border border-slate-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-              🏆 Top Goal Scorers & Playmakers
-            </h1>
-            <span class="px-2.5 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 text-xs font-bold font-mono">2026</span>
+    <!-- ======================================================== -->
+    <!-- TAB 3: PLAYERS & ROSTER                                  -->
+    <!-- ======================================================== -->
+    <div id="tab-players" class="tab-pane hidden w-full px-4 sm:px-6 lg:px-8 py-6">
+      <div class="max-w-[1720px] mx-auto flex flex-col gap-6">
+        
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-[#0B1733] border border-[#1A2E5A] p-5 rounded-2xl shadow-xl">
+          <div>
+            <h1 class="text-xl font-extrabold text-white m-0" data-i18n="player_roster_title">Players</h1>
+            <p class="text-xs text-gray-400 mt-1" data-i18n="player_roster_sub">Manage player profiles, goal counts, and batch add teammates.</p>
           </div>
-          <p class="text-xs text-slate-400 mt-1">Goal and assist rankings across all games played.</p>
+          <div class="flex items-center gap-3">
+            <button onclick="removeAllPlayers()" class="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-xs flex items-center gap-1.5 transition">
+              <span class="material-symbols-outlined text-[16px]">delete</span>
+              <span>Remove All Players</span>
+            </button>
+            <button onclick="openBatchPlayerModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFDF00] to-yellow-400 text-[#060D20] font-black text-xs flex items-center gap-1.5 shadow-lg shadow-[#FFDF00]/20 transition">
+              <span class="material-symbols-outlined text-[18px]">person_add</span>
+              <span>+ Add Multiple Players</span>
+            </button>
+          </div>
         </div>
 
-        <div class="inline-flex p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs">
-          <button onclick="sortLeaderboard('goals')" id="btn-sort-goals" class="px-3 py-1.5 rounded-lg font-bold bg-emerald-500 text-slate-950 transition">
-            ⚽ Most Goals
-          </button>
-          <button onclick="sortLeaderboard('assists')" id="btn-sort-assists" class="px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white transition">
-            🎯 Most Assists
-          </button>
-          <button onclick="sortLeaderboard('contributions')" id="btn-sort-contributions" class="px-3 py-1.5 rounded-lg font-bold text-slate-400 hover:text-white transition">
-            ⭐ G + A Total
-          </button>
+        <!-- Players Grid -->
+        <div id="player-roster-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Dynamically populated -->
         </div>
+
       </div>
-
-      <!-- Podium Top 3 Cards -->
-      <div id="podium-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Rendered in JS -->
-      </div>
-
-      <!-- Standings Table (No team/squad column) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
-          <h2 class="text-sm font-bold text-white flex items-center gap-2">
-            <i data-lucide="list-ordered" class="w-4 h-4 text-emerald-400"></i>
-            Full Player Standings
-          </h2>
-          <span class="text-xs text-slate-400">Click any player to view their profile & highlight clips</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
-            <thead class="bg-slate-950/60 text-[11px] font-mono text-slate-400 uppercase tracking-wider border-b border-slate-800">
-              <tr>
-                <th class="py-3 px-4 w-12 text-center">Rank</th>
-                <th class="py-3 px-4">Player</th>
-                <th class="py-3 px-4 text-center font-bold text-emerald-400">Goals ⚽</th>
-                <th class="py-3 px-4 text-center text-blue-400">Assists 🎯</th>
-                <th class="py-3 px-4 text-center font-bold text-yellow-400">G + A ⭐</th>
-                <th class="py-3 px-4 text-center">Matches</th>
-                <th class="py-3 px-4 text-right">Profile</th>
-              </tr>
-            </thead>
-            <tbody id="leaderboard-table-body" class="divide-y divide-slate-800/60 text-slate-300">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ========================================== -->
-    <!-- TAB 3: PLAYERS & ROSTER MANAGEMENT        -->
-    <!-- ========================================== -->
-    <div id="tab-players" class="tab-pane hidden space-y-6">
-
-      <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-        <div>
-          <h1 class="text-xl font-extrabold text-white" data-i18n="player_roster_title">Players</h1>
-          <p class="text-xs text-slate-400 mt-1" data-i18n="player_roster_sub">Manage player profiles, goal counts, and batch add teammates.</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <!-- 1-Click Remove All Players -->
-          <button onclick="removeAllPlayers()" class="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-xs flex items-center gap-1.5 transition">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-            <span>Remove All Players</span>
-          </button>
-          <!-- Batch Add Players -->
-          <button onclick="openBatchPlayerModal()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition">
-            <i data-lucide="user-plus" class="w-4 h-4"></i>
-            <span>+ Add Multiple Players</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Player Cards Grid -->
-      <div id="player-roster-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Rendered in JS -->
-      </div>
-
     </div>
 
   </main>
 
-  <!-- ========================================== -->
-  <!-- MODAL: GOAL ATTRIBUTION                    -->
-  <!-- ========================================== -->
-  <div id="goal-tag-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4 animate-in fade-in zoom-in-95 duration-150">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">⚽</div>
+  <!-- ======================================================== -->
+  <!-- MODAL 1: ATTRIBUTE GOAL EVENT                            -->
+  <!-- ======================================================== -->
+  <div id="goal-tag-modal" class="fixed inset-0 z-50 bg-[#040916]/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-[#0B1733] border border-[#1A2E5A] max-w-lg w-full rounded-2xl p-6 shadow-2xl flex flex-col gap-5 relative animate-in fade-in zoom-in duration-150">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-[#1A2E5A]">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-full bg-[#FFDF00] text-[#060D20] flex items-center justify-center text-lg font-bold shadow-sm">⚽</span>
           <div>
-            <h3 class="text-base font-bold text-white">Attribute Goal Event</h3>
-            <p class="text-xs text-slate-400">Timestamp: <span id="modal-timestamp-label" class="text-emerald-400 font-mono font-bold">00:15</span></p>
+            <h3 class="text-base font-extrabold text-white m-0">Attribute Goal Event</h3>
+            <span class="font-mono text-xs text-[#FFDF00] font-bold">Timestamp: <span id="modal-timestamp-label">00:23</span></span>
           </div>
         </div>
-        <button onclick="closeGoalTagModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
-          <i data-lucide="x" class="w-5 h-5"></i>
+        <button onclick="closeGoalTagModal()" class="w-8 h-8 rounded-lg bg-[#060D20] border border-[#1A2E5A] flex items-center justify-center text-gray-400 hover:text-white transition">
+          <span class="material-symbols-outlined text-[18px]">close</span>
         </button>
       </div>
 
-      <form id="goal-tag-form" onsubmit="submitGoalTag(event)" class="space-y-4">
-        <input type="hidden" id="goal-timestamp-input" value="15.0">
+      <!-- Form -->
+      <form id="goal-tag-form" onsubmit="submitGoalTag(event)" class="flex flex-col gap-4">
+        <input type="hidden" id="goal-timestamp-input" value="23.0"/>
 
-        <!-- Game Round Name -->
         <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-            Game Name / Round
-          </label>
-          <input type="text" id="modal-match-game-name" value="Game 1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500">
+          <label class="block font-mono text-[11px] text-gray-300 uppercase mb-1 font-semibold">Game Name / Round</label>
+          <input type="text" id="modal-match-game-name" value="Game 1" class="w-full bg-[#060D20] border border-[#1A2E5A] px-3.5 py-2 rounded-lg text-white font-mono text-xs focus:outline-none focus:border-[#FFDF00]"/>
         </div>
 
-        <!-- 1. Who Scored? -->
         <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-            1. Who scored the goal? <span class="text-emerald-400">*</span>
-          </label>
-          <select id="modal-scorer-select" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+          <label class="block font-mono text-[11px] text-gray-300 uppercase mb-1 font-semibold">1. Who scored the goal? *</label>
+          <select id="modal-scorer-select" required class="w-full bg-[#060D20] border border-[#1A2E5A] px-3.5 py-2 rounded-lg text-white font-sans text-xs focus:outline-none focus:border-[#FFDF00]">
           </select>
         </div>
 
-        <!-- 2. Who Assisted? -->
         <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-            2. Who made the assist?
-          </label>
-          <select id="modal-assist-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+          <label class="block font-mono text-[11px] text-gray-300 uppercase mb-1 font-semibold">2. Who made the assist?</label>
+          <select id="modal-assist-select" class="w-full bg-[#060D20] border border-[#1A2E5A] px-3.5 py-2 rounded-lg text-white font-sans text-xs focus:outline-none focus:border-[#FFDF00]">
             <option value="">None / Solo Effort / Rebound</option>
           </select>
         </div>
 
-        <!-- 3. Camera Angle -->
         <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-            3. Best Camera Angle for Highlight Clip
-          </label>
+          <label class="block font-mono text-[11px] text-gray-300 uppercase mb-1 font-semibold">3. Best Camera Angle for Highlight Clip</label>
           <div class="grid grid-cols-2 gap-3">
-            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-950 cursor-pointer hover:border-slate-700">
-              <input type="radio" name="clip_angle" value="a" checked class="accent-emerald-500">
-              <span class="text-xs font-semibold text-slate-200">Phone 1 (Midfield)</span>
+            <label class="flex items-center gap-2 bg-[#060D20] border border-[#1A2E5A] hover:bg-[#101E42] p-2.5 rounded-lg cursor-pointer">
+              <input checked="" class="accent-[#FFDF00]" name="clip_angle" type="radio" value="a"/>
+              <span class="font-mono text-xs text-white">Phone 1 (Midfield)</span>
             </label>
-            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-950 cursor-pointer hover:border-slate-700">
-              <input type="radio" name="clip_angle" value="b" class="accent-emerald-500">
-              <span class="text-xs font-semibold text-slate-200">Phone 2 (Behind Net)</span>
+            <label class="flex items-center gap-2 bg-[#060D20] border border-[#1A2E5A] hover:bg-[#101E42] p-2.5 rounded-lg cursor-pointer">
+              <input class="accent-[#FFDF00]" name="clip_angle" type="radio" value="b"/>
+              <span class="font-mono text-xs text-white">Phone 2 (Behind Net)</span>
             </label>
           </div>
         </div>
 
-        <!-- Submit & Clip Button -->
-        <div class="pt-2 flex items-center justify-end gap-3">
-          <button type="button" onclick="closeGoalTagModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white">
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-[#1A2E5A]">
+          <button type="button" onclick="closeGoalTagModal()" class="px-4 py-2 rounded-lg bg-[#060D20] border border-[#1A2E5A] text-gray-300 hover:text-white font-bold text-xs transition">
             Cancel
           </button>
-          <button type="submit" id="modal-save-goal-btn" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition">
-            <i data-lucide="check-circle" class="w-4 h-4"></i>
-            <span>Save & Extract 15s Clip</span>
+          <button type="submit" id="modal-save-goal-btn" class="flex items-center gap-2 bg-gradient-to-r from-[#FFDF00] via-yellow-400 to-amber-400 text-[#060D20] font-black text-xs px-5 py-2.5 rounded-lg shadow-md hover:scale-[1.02] transition">
+            <span class="material-symbols-outlined text-[18px]">bookmark_add</span>
+            <span>Save &amp; Extract 15s Clip</span>
           </button>
         </div>
       </form>
+
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- MODAL: ADD MULTIPLE PLAYERS (TABLE & PASTE) -->
-  <!-- ========================================== -->
-  <div id="batch-player-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl relative space-y-4 animate-in fade-in zoom-in-95 duration-150">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+  <!-- ======================================================== -->
+  <!-- MODAL 2: UPLOAD & ASSIGN MATCH VIDEOS (MULTI-CAM)         -->
+  <!-- ======================================================== -->
+  <div id="video-upload-modal" class="fixed inset-0 z-50 bg-[#040916]/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-[#0B1733] border border-[#1A2E5A] max-w-2xl w-full rounded-2xl p-6 shadow-2xl flex flex-col gap-5 relative animate-in fade-in zoom-in duration-150">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-[#1A2E5A]">
         <div>
-          <h3 class="text-base font-bold text-white flex items-center gap-2">
-            <i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i>
+          <h3 class="text-lg font-extrabold text-white m-0" data-i18n="upload_modal_title">Upload &amp; Assign Match Videos</h3>
+          <p class="text-xs text-gray-300 m-0 mt-1" data-i18n="upload_modal_sub">Continuous footage for Camera 1 (Midfield) and Camera 2 (Behind Net)</p>
+        </div>
+        <button onclick="closeVideoUploadModal()" class="w-8 h-8 rounded-lg bg-[#060D20] border border-[#1A2E5A] flex items-center justify-center text-gray-400 hover:text-white transition">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <!-- Mode Switcher Tabs -->
+      <div class="flex items-center gap-2 bg-[#060D20] p-1 rounded-lg border border-[#1A2E5A]">
+        <button id="upload-tab-btn-direct" onclick="switchUploadModalTab('direct')" class="flex-1 py-1.5 rounded text-xs font-black bg-[#FFDF00] text-[#060D20] shadow-sm text-center transition">
+          Direct Upload (Drag &amp; Drop)
+        </button>
+        <button id="upload-tab-btn-folder" onclick="switchUploadModalTab('folder')" class="flex-1 py-1.5 rounded text-xs font-medium text-gray-300 hover:text-white text-center transition">
+          Pick from Mac Folder (AirDrop / Local)
+        </button>
+      </div>
+
+      <!-- TAB 1: Direct Upload -->
+      <div id="upload-pane-direct" class="flex flex-col gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Cam 1 Zone -->
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-xs text-white font-bold" data-i18n="cam1_box_label">Camera 1: Midfield Cam</span>
+              <span id="cam1-file-badge" class="font-mono text-[10px] text-[#009B3A] font-bold">Ready</span>
+            </div>
+            <label for="cam1-file-input" id="cam1-dropzone" class="bg-[#060D20] border border-[#1A2E5A] hover:border-[#FFDF00]/50 p-5 rounded-xl flex flex-col items-center justify-center text-center gap-2 cursor-pointer transition">
+              <span class="material-symbols-outlined text-[#FFDF00] text-[36px]">videocam</span>
+              <span id="cam1-filename" class="text-xs font-bold text-white truncate max-w-[200px]">match1_angle_a.mp4</span>
+              <span id="cam1-filesize" class="font-mono text-[10px] text-gray-400">2.6 MB • 60fps • Ready</span>
+              <input type="file" id="cam1-file-input" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v" class="hidden" onchange="handleFileSelected('cam1', this.files[0])">
+            </label>
+          </div>
+
+          <!-- Cam 2 Zone -->
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-xs text-white font-bold" data-i18n="cam2_box_label">Camera 2: Behind Net Cam</span>
+              <span id="cam2-file-badge" class="font-mono text-[10px] text-[#00C2FF] font-bold">Ready</span>
+            </div>
+            <label for="cam2-file-input" id="cam2-dropzone" class="bg-[#060D20] border border-[#1A2E5A] hover:border-[#00C2FF]/50 p-5 rounded-xl flex flex-col items-center justify-center text-center gap-2 cursor-pointer transition">
+              <span class="material-symbols-outlined text-[#00C2FF] text-[36px]">videocam</span>
+              <span id="cam2-filename" class="text-xs font-bold text-white truncate max-w-[200px]">match1_angle_b.mp4</span>
+              <span id="cam2-filesize" class="font-mono text-[10px] text-gray-400">2.6 MB • 60fps • Ready</span>
+              <input type="file" id="cam2-file-input" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v" class="hidden" onchange="handleFileSelected('cam2', this.files[0])">
+            </label>
+          </div>
+        </div>
+
+        <!-- Progress Container -->
+        <div id="upload-progress-container" class="space-y-1.5 hidden">
+          <div class="flex items-center justify-between text-xs">
+            <span id="upload-status-text" class="text-gray-300 font-medium">Uploading video files...</span>
+            <span id="upload-percent-text" class="text-[#FFDF00] font-mono font-bold">0%</span>
+          </div>
+          <div class="w-full bg-[#060D20] rounded-full h-2.5 overflow-hidden border border-[#1A2E5A]">
+            <div id="upload-progress-fill" class="bg-gradient-to-r from-[#FFDF00] to-[#009B3A] h-2.5 rounded-full transition-all duration-200" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div id="upload-alert" class="hidden p-3 rounded-xl text-xs font-medium border"></div>
+
+        <div class="flex items-center justify-end gap-3 pt-2 border-t border-[#1A2E5A]">
+          <button type="button" onclick="closeVideoUploadModal()" class="px-4 py-2 rounded-lg bg-[#060D20] border border-[#1A2E5A] text-gray-300 hover:text-white text-xs font-bold transition">
+            Cancel
+          </button>
+          <button type="button" id="start-upload-btn" onclick="startDirectUpload()" class="flex items-center gap-2 bg-gradient-to-r from-[#FFDF00] via-yellow-400 to-amber-400 text-[#060D20] font-black text-xs px-5 py-2.5 rounded-lg shadow-md hover:scale-[1.02] transition">
+            <span class="material-symbols-outlined text-[18px]">upload</span>
+            <span data-i18n="upload_start_btn">Upload &amp; Attach to Match</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 2: Mac Folder Picker -->
+      <div id="upload-pane-folder" class="flex flex-col gap-4 hidden">
+        <!-- AirDrop Pro Tip Banner -->
+        <div class="bg-[#060D20] border border-[#FFDF00]/30 p-3.5 rounded-xl flex items-start gap-3">
+          <span class="material-symbols-outlined text-[#FFDF00] text-[22px] shrink-0">bolt</span>
+          <div class="flex flex-col">
+            <span class="text-xs font-bold text-white">Fastest for large 4K / HD files:</span>
+            <span class="text-xs text-gray-300 mt-0.5">AirDrop or copy your phone videos directly into <code class="text-[#FFDF00] font-mono bg-[#0B1733] px-1 py-0.5 rounded border border-[#FFDF00]/30">~/Movies/SoCraques/Pickup-2026-10-08</code> on your Mac.</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="text" id="mac-videos-path-input" readonly value="/Users/pandraus/.gemini/antigravity/scratch/pitchstat/static/videos" class="flex-1 bg-[#060D20] border border-[#1A2E5A] rounded-lg px-2.5 py-1.5 text-xs font-mono text-[#FFDF00] select-all focus:outline-none"/>
+          <button onclick="copyMacVideosPath()" class="px-3 py-1.5 rounded-lg bg-[#060D20] border border-[#1A2E5A] hover:bg-[#14234C] text-xs font-bold text-white flex items-center gap-1 transition">
+            <span class="material-symbols-outlined text-[14px]">content_copy</span>
+            <span>Copy Path</span>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Camera 1: Midfield Cam</label>
+            <select id="folder-cam1-select" class="w-full bg-[#060D20] border border-[#1A2E5A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FFDF00]">
+              <option value="">-- Choose video file --</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Camera 2: Behind Net Cam</label>
+            <select id="folder-cam2-select" class="w-full bg-[#060D20] border border-[#1A2E5A] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FFDF00]">
+              <option value="">-- Choose video file --</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="folder-alert" class="hidden p-3 rounded-xl text-xs font-medium border"></div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-[#1A2E5A]">
+          <button type="button" onclick="refreshAvailableVideosList()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1">
+            <span class="material-symbols-outlined text-[16px]">refresh</span>
+            <span>Refresh Files</span>
+          </button>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="closeVideoUploadModal()" class="px-4 py-2 rounded-lg bg-[#060D20] border border-[#1A2E5A] text-gray-300 hover:text-white text-xs font-bold transition">
+              Cancel
+            </button>
+            <button type="button" onclick="applyExistingFolderVideos()" class="flex items-center gap-2 bg-gradient-to-r from-[#FFDF00] via-yellow-400 to-amber-400 text-[#060D20] font-black text-xs px-5 py-2.5 rounded-lg shadow-md hover:scale-[1.02] transition">
+              <span class="material-symbols-outlined text-[18px]">check_circle</span>
+              <span>Apply Selected Videos</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 3: MATCH SHEET SUMMARY (SÚMULA)                    -->
+  <!-- ======================================================== -->
+  <div id="match-sheet-modal" class="fixed inset-0 z-50 bg-[#040916]/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-[#0B1733] border border-[#1A2E5A] max-w-xl w-full rounded-2xl p-6 shadow-2xl flex flex-col gap-5 relative animate-in fade-in zoom-in duration-150">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-[#1A2E5A]">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-xl bg-[#FFDF00] text-[#060D20] flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-[22px]">assignment</span>
+          </span>
+          <div>
+            <h3 class="text-base font-extrabold text-white m-0">Súmula do Jogo • Match Sheet</h3>
+            <p class="text-xs text-gray-400 m-0">2026-10-08 • Synthetic Cage (Maracanã Turf)</p>
+          </div>
+        </div>
+        <button onclick="closeMatchSheetModal()" class="w-8 h-8 rounded-lg bg-[#060D20] border border-[#1A2E5A] flex items-center justify-center text-gray-400 hover:text-white transition">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Highlights Breakdown -->
+        <div class="grid grid-cols-2 gap-3 text-center">
+          <div class="bg-[#060D20] border border-[#1A2E5A] p-3 rounded-xl">
+            <span class="text-[10px] font-mono uppercase text-gray-400">Total Gols</span>
+            <p id="sheet-total-goals" class="text-2xl font-black text-[#FFDF00] m-0 mt-1">3</p>
+          </div>
+          <div class="bg-[#060D20] border border-[#1A2E5A] p-3 rounded-xl">
+            <span class="text-[10px] font-mono uppercase text-gray-400">Canetas Logadas</span>
+            <p id="sheet-total-nutmegs" class="text-2xl font-black text-[#00C2FF] m-0 mt-1">1</p>
+          </div>
+        </div>
+
+        <!-- Scorers Timeline in Match Sheet -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">Cronologia dos Lances:</h4>
+          <div id="sheet-events-timeline" class="space-y-2 max-h-56 overflow-y-auto">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-3 border-t border-[#1A2E5A]">
+        <button onclick="closeMatchSheetModal()" class="px-5 py-2 rounded-lg bg-[#060D20] border border-[#1A2E5A] text-[#FFDF00] font-bold text-xs hover:bg-[#14234C] transition">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 4: ADD MULTIPLE PLAYERS                            -->
+  <!-- ======================================================== -->
+  <div id="batch-player-modal" class="fixed inset-0 z-50 bg-[#040916]/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-[#0B1733] border border-[#1A2E5A] max-w-xl w-full rounded-2xl p-6 shadow-2xl flex flex-col gap-4 relative animate-in fade-in zoom-in duration-150">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-[#1A2E5A]">
+        <div>
+          <h3 class="text-base font-extrabold text-white m-0 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#FFDF00] text-[20px]">person_add</span>
             Add Multiple Players
           </h3>
-          <p class="text-xs text-slate-400">Quickly add multiple teammates by typing in the table or pasting a list.</p>
+          <p class="text-xs text-gray-400 m-0 mt-0.5">Quickly add multiple teammates by typing in the table or pasting a list.</p>
         </div>
-        <button onclick="closeBatchPlayerModal()" class="text-slate-400 hover:text-white p-1">
-          <i data-lucide="x" class="w-5 h-5"></i>
+        <button onclick="closeBatchPlayerModal()" class="w-8 h-8 rounded-lg bg-[#060D20] border border-[#1A2E5A] flex items-center justify-center text-gray-400 hover:text-white transition">
+          <span class="material-symbols-outlined text-[18px]">close</span>
         </button>
       </div>
 
       <!-- Quick Paste Helper Box -->
-      <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
-        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+      <div class="bg-[#060D20] p-3 rounded-xl border border-[#1A2E5A] space-y-2">
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 flex items-center justify-between">
           <span>Option A: Paste Multiple Names (one per line)</span>
-          <span class="text-emerald-400 lowercase font-mono">quickest</span>
+          <span class="text-[#FFDF00] font-mono lowercase">quickest</span>
         </label>
-        <textarea id="paste-names-input" rows="3" placeholder="Paste names here, e.g.:&#10;Paulo Andraus&#10;William Fonseca&#10;Lucas Silva&#10;Carlos Mendez" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-emerald-500"></textarea>
-        <button type="button" onclick="loadPastedNamesIntoTable()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-bold transition flex items-center gap-1">
-          <i data-lucide="arrow-down" class="w-3.5 h-3.5"></i>
+        <textarea id="paste-names-input" rows="3" placeholder="Paulo Andraus&#10;Carlos Roberto&#10;William&#10;Léo" class="w-full bg-[#0B1733] border border-[#1A2E5A] rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#FFDF00]"></textarea>
+        <button type="button" onclick="loadPastedNamesIntoTable()" class="px-3 py-1.5 rounded-lg bg-[#14234C] hover:bg-[#1B2848] text-[#FFDF00] text-xs font-bold transition flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">arrow_downward</span>
           <span>Add to Table Below</span>
         </button>
       </div>
 
-      <!-- Option B: Editable Players Table -->
+      <!-- Option B: Table -->
       <div>
         <div class="flex items-center justify-between mb-2">
-          <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Player List Table
-          </label>
-          <button type="button" onclick="addEmptyTableRow()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1">
-            <i data-lucide="plus" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <label class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Player List Table</label>
+          <button type="button" onclick="addEmptyTableRow()" class="px-2.5 py-1 rounded-lg bg-[#060D20] border border-[#1A2E5A] hover:bg-[#14234C] text-white text-xs font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px] text-[#FFDF00]">add</span>
             <span>+ Add Row</span>
           </button>
         </div>
 
-        <div class="max-h-56 overflow-y-auto border border-slate-800 rounded-xl">
+        <div class="max-h-48 overflow-y-auto border border-[#1A2E5A] rounded-xl">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-950 text-slate-400 font-mono text-[10px] uppercase border-b border-slate-800 sticky top-0">
+            <thead class="bg-[#060D20] text-gray-400 font-mono text-[10px] uppercase border-b border-[#1A2E5A] sticky top-0">
               <tr>
                 <th class="py-2 px-3 w-12 text-center">#</th>
                 <th class="py-2 px-3">Player Name</th>
                 <th class="py-2 px-3 w-12 text-center">Action</th>
               </tr>
             </thead>
-            <tbody id="batch-table-body" class="divide-y divide-slate-800/60 bg-slate-900">
-              <!-- Dynamic rows populated via JS -->
+            <tbody id="batch-table-body" class="divide-y divide-[#1A2E5A]/60 bg-[#0B1733]">
+              <!-- Dynamic rows -->
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="pt-2 flex items-center justify-between border-t border-slate-800">
-        <span class="text-xs text-slate-400 font-mono" id="batch-count-label">0 players in list</span>
+      <!-- Footer -->
+      <div class="pt-2 flex items-center justify-between border-t border-[#1A2E5A]">
+        <span class="text-xs text-gray-400 font-mono" id="batch-count-label">0 players in list</span>
         <div class="flex items-center gap-2">
-          <button type="button" onclick="closeBatchPlayerModal()" class="px-3 py-2 text-xs font-semibold text-slate-400 hover:text-white">
+          <button type="button" onclick="closeBatchPlayerModal()" class="px-3 py-2 text-xs font-semibold text-gray-400 hover:text-white">
             Cancel
           </button>
-          <button type="button" onclick="submitBatchPlayers()" id="save-batch-btn" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
-            <i data-lucide="check" class="w-4 h-4"></i>
+          <button type="button" onclick="submitBatchPlayers()" id="save-batch-btn" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FFDF00] to-yellow-400 text-[#060D20] font-black text-xs flex items-center gap-1.5 shadow-md">
+            <span class="material-symbols-outlined text-[16px]">check</span>
             <span>Save All Players</span>
           </button>
         </div>
       </div>
+
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- MODAL: PLAYER PROFILE & GOAL REEL          -->
-  <!-- ========================================== -->
-  <div id="player-profile-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative space-y-4">
-      <button onclick="closePlayerModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
-        <i data-lucide="x" class="w-5 h-5"></i>
+  <!-- ======================================================== -->
+  <!-- MODAL 5: PLAYER PROFILE & HIGHLIGHT REEL                 -->
+  <!-- ======================================================== -->
+  <div id="player-profile-modal" class="fixed inset-0 z-50 bg-[#040916]/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-[#0B1733] border border-[#1A2E5A] max-w-xl w-full rounded-2xl p-6 shadow-2xl relative space-y-4">
+      <button onclick="closePlayerModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-[#060D20] border border-[#1A2E5A] flex items-center justify-center text-gray-400 hover:text-white transition">
+        <span class="material-symbols-outlined text-[18px]">close</span>
       </button>
 
       <div class="flex items-center gap-4">
-        <div id="profile-modal-avatar" class="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl text-slate-950 shadow-xl">
-          #1
+        <div id="profile-modal-avatar" class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#FFDF00] to-yellow-300 flex items-center justify-center font-black text-2xl text-[#060D20] shadow-xl">
+          #10
         </div>
         <div>
-          <h2 id="profile-modal-name" class="text-xl font-black text-white">Player Name</h2>
-          <p id="profile-modal-meta" class="text-xs text-slate-400 mt-0.5">Player Profile</p>
+          <h2 id="profile-modal-name" class="text-xl font-black text-white m-0">Player Name</h2>
+          <p id="profile-modal-meta" class="text-xs text-gray-400 mt-0.5">Player Profile</p>
         </div>
       </div>
 
       <div class="grid grid-cols-3 gap-3 text-center">
-        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
-          <p class="text-[10px] font-mono uppercase text-slate-400">Goals</p>
-          <p id="profile-stat-goals" class="text-2xl font-black text-emerald-400">0</p>
+        <div class="bg-[#060D20] border border-[#1A2E5A] p-3 rounded-xl">
+          <p class="text-[10px] font-mono uppercase text-gray-400 m-0">Goals</p>
+          <p id="profile-stat-goals" class="text-2xl font-black text-[#FFDF00] m-0 mt-1">0</p>
         </div>
-        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
-          <p class="text-[10px] font-mono uppercase text-slate-400">Assists</p>
-          <p id="profile-stat-assists" class="text-2xl font-black text-blue-400">0</p>
+        <div class="bg-[#060D20] border border-[#1A2E5A] p-3 rounded-xl">
+          <p class="text-[10px] font-mono uppercase text-gray-400 m-0">Assists</p>
+          <p id="profile-stat-assists" class="text-2xl font-black text-[#00C2FF] m-0 mt-1">0</p>
         </div>
-        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
-          <p class="text-[10px] font-mono uppercase text-slate-400">Total G + A</p>
-          <p id="profile-stat-contributions" class="text-2xl font-black text-yellow-400">0</p>
+        <div class="bg-[#060D20] border border-[#1A2E5A] p-3 rounded-xl">
+          <p class="text-[10px] font-mono uppercase text-gray-400 m-0">Total G + A</p>
+          <p id="profile-stat-contributions" class="text-2xl font-black text-[#009B3A] m-0 mt-1">0</p>
         </div>
       </div>
 
-      <div class="space-y-2 pt-2 border-t border-slate-800">
-        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-          <i data-lucide="film" class="w-4 h-4 text-emerald-400"></i>
+      <div class="space-y-2 pt-2 border-t border-[#1A2E5A]">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px] text-[#FFDF00]">movie</span>
           Player Goal Reel (15s Clips)
         </h4>
-        <div id="profile-clips-container" class="space-y-2 max-h-64 overflow-y-auto"></div>
+        <div id="profile-clips-container" class="space-y-2 max-h-56 overflow-y-auto"></div>
       </div>
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- MODAL: UPLOAD / ASSIGN MATCH VIDEOS        -->
-  <!-- ========================================== -->
-  <div id="video-upload-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative space-y-5">
-      <button onclick="closeVideoUploadModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-
-      <!-- Modal Header -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-sm">
-          <i data-lucide="video" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <h2 class="text-lg font-bold text-white" data-i18n="upload_modal_title">Upload & Assign Match Videos</h2>
-          <p class="text-xs text-slate-400" data-i18n="upload_modal_sub">Upload continuous footage for Camera 1 (Midfield) and Camera 2 (Behind Net), or select files already on your Mac.</p>
-        </div>
+  <!-- Footer -->
+  <footer class="w-full bg-[#060D20] border-t border-[#002776]/50 py-6 mt-12">
+    <div class="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-gray-300">
+      <div class="flex items-center gap-2 font-mono text-xs">
+        <span class="text-[#FFDF00] font-extrabold">SóCraques Canarinho Telemetry</span>
+        <span>•</span>
+        <span class="text-[#009B3A] font-bold">Multi-Angle Sync v2.4</span>
       </div>
-
-      <!-- Tab Switcher: Direct Upload vs Mac Folder -->
-      <div class="flex border-b border-slate-800 gap-4 text-xs font-bold">
-        <button id="upload-tab-btn-direct" onclick="switchUploadModalTab('direct')" class="pb-2.5 border-b-2 border-blue-500 text-blue-400 flex items-center gap-1.5 transition">
-          <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
-          <span data-i18n="upload_tab_direct">Direct Upload (Drag & Drop)</span>
-        </button>
-        <button id="upload-tab-btn-folder" onclick="switchUploadModalTab('folder')" class="pb-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition">
-          <i data-lucide="folder" class="w-3.5 h-3.5"></i>
-          <span data-i18n="upload_tab_folder">Pick from Mac Folder (AirDrop / Local)</span>
-        </button>
+      <div class="flex items-center gap-6 text-xs text-gray-400">
+        <a class="hover:text-[#FFDF00] transition" href="#">Pitch Calibration</a>
+        <a class="hover:text-[#FFDF00] transition" href="#">Camera Setup</a>
+        <a class="hover:text-[#FFDF00] transition" href="#">Hardware Specs</a>
       </div>
-
-      <!-- TAB 1: DIRECT UPLOAD -->
-      <div id="upload-pane-direct" class="space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Camera 1 Box -->
-          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5" data-i18n="cam1_box_label">
-                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                Camera 1: Midfield Cam
-              </span>
-              <span id="cam1-file-badge" class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">None chosen</span>
-            </div>
-
-            <!-- Drag & Drop Zone -->
-            <label for="cam1-file-input" id="cam1-dropzone" class="border-2 border-dashed border-slate-700 hover:border-emerald-500/70 bg-slate-900/50 hover:bg-emerald-950/20 rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center min-h-[120px]">
-              <i data-lucide="smartphone" class="w-7 h-7 text-emerald-400/80 mb-2"></i>
-              <span id="cam1-filename" class="text-xs font-semibold text-slate-300 block truncate max-w-[200px]" data-i18n="dropzone_prompt">Click or drag & drop video (.mp4, .mov)</span>
-              <span id="cam1-filesize" class="text-[10px] text-slate-500 mt-1 block">Phone 1 recording</span>
-              <input type="file" id="cam1-file-input" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v" class="hidden" onchange="handleFileSelected('cam1', this.files[0])">
-            </label>
-          </div>
-
-          <!-- Camera 2 Box -->
-          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-blue-400 flex items-center gap-1.5" data-i18n="cam2_box_label">
-                <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-                Camera 2: Behind Net Cam
-              </span>
-              <span id="cam2-file-badge" class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">None chosen</span>
-            </div>
-
-            <!-- Drag & Drop Zone -->
-            <label for="cam2-file-input" id="cam2-dropzone" class="border-2 border-dashed border-slate-700 hover:border-blue-500/70 bg-slate-900/50 hover:bg-blue-950/20 rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center min-h-[120px]">
-              <i data-lucide="camera" class="w-7 h-7 text-blue-400/80 mb-2"></i>
-              <span id="cam2-filename" class="text-xs font-semibold text-slate-300 block truncate max-w-[200px]" data-i18n="dropzone_prompt">Click or drag & drop video (.mp4, .mov)</span>
-              <span id="cam2-filesize" class="text-[10px] text-slate-500 mt-1 block">Phone 2 recording</span>
-              <input type="file" id="cam2-file-input" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v" class="hidden" onchange="handleFileSelected('cam2', this.files[0])">
-            </label>
-          </div>
-        </div>
-
-        <!-- Progress Bar (Hidden by default) -->
-        <div id="upload-progress-container" class="space-y-1.5 hidden">
-          <div class="flex items-center justify-between text-xs">
-            <span id="upload-status-text" class="text-slate-300 font-medium">Uploading video files...</span>
-            <span id="upload-percent-text" class="text-blue-400 font-mono font-bold">0%</span>
-          </div>
-          <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
-            <div id="upload-progress-fill" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-2.5 rounded-full transition-all duration-200" style="width: 0%"></div>
-          </div>
-        </div>
-
-        <!-- Upload Notification / Alert -->
-        <div id="upload-alert" class="hidden p-3 rounded-xl text-xs font-medium border"></div>
-
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <button type="button" onclick="closeVideoUploadModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white" data-i18n="cancel">
-            Cancel
-          </button>
-          <button type="button" id="start-upload-btn" onclick="startDirectUpload()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-blue-500/20 transition disabled:opacity-50 disabled:pointer-events-none">
-            <i data-lucide="upload" class="w-4 h-4"></i>
-            <span data-i18n="upload_start_btn">Upload & Attach to Match</span>
-          </button>
-        </div>
+      <div class="font-mono text-[11px] text-gray-400">
+        © 2026 SóCraques Brasil. Broadcast Engineering.
       </div>
-
-      <!-- TAB 2: MAC FOLDER PICKER -->
-      <div id="upload-pane-folder" class="space-y-4 hidden">
-        <div class="bg-blue-950/30 border border-blue-900/40 rounded-xl p-3.5 space-y-2">
-          <div class="flex items-center gap-2 text-xs font-bold text-blue-400">
-            <i data-lucide="zap" class="w-4 h-4"></i>
-            <span data-i18n="folder_tip_title">⚡ Fastest for large 4K / HD files:</span>
-          </div>
-          <p class="text-xs text-slate-300" data-i18n="folder_tip_desc">
-            AirDrop or copy your phone videos directly into this folder on your Mac:
-          </p>
-          <div class="flex items-center gap-2">
-            <input type="text" id="mac-videos-path-input" readonly value="/Users/pandraus/.gemini/antigravity/scratch/pitchstat/static/videos" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-400 select-all focus:outline-none">
-            <button onclick="copyMacVideosPath()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white flex items-center gap-1 transition">
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-              <span data-i18n="copy_path_btn">Copy Path</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1" data-i18n="cam1_box_label">Camera 1: Midfield Cam</label>
-            <select id="folder-cam1-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
-              <option value="">-- Choose video file --</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1" data-i18n="cam2_box_label">Camera 2: Behind Net Cam</label>
-            <select id="folder-cam2-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
-              <option value="">-- Choose video file --</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Folder Alert -->
-        <div id="folder-alert" class="hidden p-3 rounded-xl text-xs font-medium border"></div>
-
-        <div class="flex items-center justify-between pt-2">
-          <button type="button" onclick="refreshAvailableVideosList()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            <span>Refresh Files</span>
-          </button>
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="closeVideoUploadModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white" data-i18n="cancel">
-              Cancel
-            </button>
-            <button type="button" onclick="applyExistingFolderVideos()" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition">
-              <i data-lucide="check" class="w-4 h-4"></i>
-              <span data-i18n="apply_existing_btn">Apply Selected Videos</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
     </div>
-  </div>
+  </footer>
 
   <script src="app.js"></script>
 </body>
