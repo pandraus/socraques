@@ -40,6 +40,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadPlayers();
   await loadMatch(state.currentMatchId);
   await loadLeaderboard();
+
+  // Handle URL hash if set (e.g. #match, #leaderboard, #players)
+  const hash = window.location.hash.replace('#', '');
+  if (['match', 'leaderboard', 'players'].includes(hash)) {
+    switchTab(hash);
+  } else {
+    switchTab('home');
+  }
 });
 
 function changeLanguage(lang) {
@@ -61,10 +69,16 @@ function switchTab(tabName) {
   if (targetTab) targetTab.classList.remove('hidden');
   if (targetBtn) targetBtn.classList.add('active');
 
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
   if (tabName === 'leaderboard') {
     loadLeaderboard();
   } else if (tabName === 'players') {
     renderPlayersRoster();
+  } else if (tabName === 'match') {
+    if (videoA && videoA.src && !state.isPlaying) {
+      updateTimelineDisplay(videoA.currentTime || 0);
+    }
   }
 }
 
@@ -127,7 +141,6 @@ function updateTimelineDisplay(t) {
 function updateContextualOverlay(t) {
   if (!eventOverlayBadge) return;
 
-  // Check matching match goals or nutmegs near current timestamp (±3 seconds)
   let foundEvent = null;
   if (state.currentMatch) {
     const goals = state.currentMatch.goals || [];
@@ -155,7 +168,7 @@ function updateContextualOverlay(t) {
     }
   }
 
-  // Fallback to default mockup highlight times if not found
+  // Fallback highlight windows
   if (!foundEvent) {
     if (t >= 7.5 && t <= 12.5) {
       foundEvent = { type: 'goal', text: '⚽⚽ GOLAÇO! Paulo Andraus (0:09)' };
@@ -173,7 +186,6 @@ function updateContextualOverlay(t) {
     eventOverlayBadge.classList.add('flex');
     if (eventOverlayText) eventOverlayText.textContent = foundEvent.text;
   } else {
-    // Keep it subtly hidden when no highlight is playing
     eventOverlayBadge.classList.add('hidden');
     eventOverlayBadge.classList.remove('flex');
   }
@@ -341,7 +353,7 @@ async function loadMatch(id) {
     if (dateDisplay) dateDisplay.textContent = state.currentMatch.match_date || '2026-10-08';
 
     const goalsBadge = document.getElementById('match-goals-badge');
-    if (goalsBadge) goalsBadge.textContent = `⚽ ${goalsCount} Goals Logged`;
+    if (goalsBadge) goalsBadge.textContent = `⚽ ${goalsCount} Gols`;
 
     const nutmegsBadge = document.getElementById('match-nutmegs-badge');
     if (nutmegsBadge) nutmegsBadge.textContent = `🪄 ${nutmegsCount} Caneta${nutmegsCount === 1 ? '' : 's'}`;
@@ -379,9 +391,9 @@ function renderMatchGoals(passedGoals) {
   const nutmegs = (state.currentMatch && state.currentMatch.nutmegs) || [];
 
   if (countSubtitle) {
-    const goalText = goals.length === 1 ? 'goal' : 'goals';
+    const goalText = goals.length === 1 ? 'gol' : 'gols';
     const nutmegText = nutmegs.length === 1 ? 'caneta' : 'canetas';
-    countSubtitle.innerHTML = `<span class="text-[#FFDF00] font-bold">${goals.length} ${goalText}</span> recorded • <span class="text-[#00C2FF] font-bold">${nutmegs.length} ${nutmegText}</span>`;
+    countSubtitle.innerHTML = `<span class="text-[#FFDF00] font-bold">${goals.length} ${goalText}</span> gravados • <span class="text-[#00C2FF] font-bold">${nutmegs.length} ${nutmegText}</span>`;
   }
 
   const events = [
@@ -394,13 +406,13 @@ function renderMatchGoals(passedGoals) {
   if (events.length === 0) {
     container.innerHTML = `
       <div class="text-center py-10 text-gray-500 text-xs">
-        No goals or canetas recorded yet.
+        Nenhum gol ou caneta gravado ainda.
       </div>
     `;
     return;
   }
 
-  const nutmeggedLabel = (window.I18N && I18N.t('nutmegged_text')) || 'nutmegged';
+  const nutmeggedLabel = (window.I18N && I18N.t('nutmegged_text')) || 'deu caneta em';
   const downloadTitle = (window.I18N && I18N.t('download_clip')) || 'Baixar Clipe de 20s (10s antes e 10s depois)';
 
   container.innerHTML = events.map(ev => {
@@ -413,7 +425,6 @@ function renderMatchGoals(passedGoals) {
         <div class="feed-item bg-[#060D20] hover:bg-[#101E42] border border-[#1A2E5A] hover:border-[#FFDF00]/50 p-3.5 rounded-xl transition-all shadow-md group cursor-pointer" onclick="seekToGoal(${ev.timestamp_sec})">
           <div class="flex items-start justify-between gap-3">
             <div class="flex items-start gap-3">
-              <!-- Canary Yellow Timestamp Pill -->
               <div class="bg-[#FFDF00] text-[#060D20] px-2.5 py-1 rounded-lg font-mono text-xs font-black shrink-0 shadow-sm">
                 ${timeStr}
               </div>
@@ -427,23 +438,22 @@ function renderMatchGoals(passedGoals) {
                 </div>
                 <div class="flex items-center gap-1 text-gray-300 text-xs">
                   <span class="text-[13px]">🎯</span>
-                  <span>Assist: <span class="text-white font-bold">${hasAssist ? ev.assist_name : 'Solo / Unassisted'}</span></span>
+                  <span>Assist: <span class="text-white font-bold">${hasAssist ? ev.assist_name : 'Solo / Sem Assistência'}</span></span>
                 </div>
                 <span class="text-gray-400 italic text-[11px] mt-0.5">
-                  "${ev.notes || 'Logged live during Game 1'}"
+                  "${ev.notes || 'Gravado ao vivo durante a pelada'}"
                 </span>
               </div>
             </div>
             
-            <!-- Quick Actions: Play & Download -->
             <div class="flex items-center gap-1 shrink-0 text-gray-400 group-hover:text-white transition-colors">
-              <button onclick="event.stopPropagation(); seekToGoal(${ev.timestamp_sec})" class="w-8 h-8 rounded-lg bg-[#0B1733] border border-[#1A2E5A] flex items-center justify-center hover:bg-[#FFDF00] hover:text-[#060D20] transition-colors" title="Play Highlight Clip">
+              <button onclick="event.stopPropagation(); seekToGoal(${ev.timestamp_sec})" class="w-8 h-8 rounded-lg bg-[#0B1733] border border-[#1A2E5A] flex items-center justify-center hover:bg-[#FFDF00] hover:text-[#060D20] transition-colors" title="Ver Clipe">
                 <span class="material-symbols-outlined text-[16px]">play_arrow</span>
               </button>
               <button id="btn-download-goal-${ev.id}" onclick="event.stopPropagation(); downloadClip('goal', ${ev.id}, ${ev.timestamp_sec}, '${safeName}')" class="w-8 h-8 rounded-lg bg-[#0B1733] border border-[#1A2E5A] flex items-center justify-center hover:bg-[#009B3A] hover:text-white transition-colors" title="${downloadTitle}">
                 <span class="material-symbols-outlined text-[16px]">download</span>
               </button>
-              <button onclick="event.stopPropagation(); deleteGoal(${ev.id})" title="Delete Goal" class="w-8 h-8 rounded-lg bg-[#0B1733] border border-[#1A2E5A] flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
+              <button onclick="event.stopPropagation(); deleteGoal(${ev.id})" title="Excluir Gol" class="w-8 h-8 rounded-lg bg-[#0B1733] border border-[#1A2E5A] flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
                 <span class="material-symbols-outlined text-[14px]">delete</span>
               </button>
             </div>
@@ -458,7 +468,6 @@ function renderMatchGoals(passedGoals) {
         <div class="feed-item bg-[#060D20] hover:bg-[#101E42] border border-[#002776] hover:border-[#00C2FF]/50 p-3.5 rounded-xl transition-all shadow-md group cursor-pointer" onclick="seekToGoal(${ev.timestamp_sec})">
           <div class="flex items-start justify-between gap-3">
             <div class="flex items-start gap-3">
-              <!-- Royal Blue / Violet Accent Timestamp Pill -->
               <div class="bg-[#002776] text-[#00C2FF] border border-[#00C2FF]/40 px-2.5 py-1 rounded-lg font-mono text-xs font-black shrink-0 shadow-sm">
                 ${timeStr}
               </div>
@@ -474,20 +483,19 @@ function renderMatchGoals(passedGoals) {
                   <span>${nutmeggedLabel} ${ev.receiver_name} (Caneta!)</span>
                 </div>
                 <span class="text-gray-400 italic text-[11px] mt-0.5">
-                  "${ev.notes || 'Logged live during Game 1'}"
+                  "${ev.notes || 'Gravado ao vivo durante a pelada'}"
                 </span>
               </div>
             </div>
 
-            <!-- Quick Actions: Play & Download -->
             <div class="flex items-center gap-1 shrink-0 text-gray-400 group-hover:text-white transition-colors">
-              <button onclick="event.stopPropagation(); seekToGoal(${ev.timestamp_sec})" class="w-8 h-8 rounded-lg bg-[#0B1733] border border-[#1A2E5A] flex items-center justify-center hover:bg-[#00C2FF] hover:text-[#060D20] transition-colors" title="Play Highlight Clip">
+              <button onclick="event.stopPropagation(); seekToGoal(${ev.timestamp_sec})" class="w-8 h-8 rounded-lg bg-[#0B1733] border border-[#1A2E5A] flex items-center justify-center hover:bg-[#00C2FF] hover:text-[#060D20] transition-colors" title="Ver Clipe">
                 <span class="material-symbols-outlined text-[16px]">play_arrow</span>
               </button>
               <button id="btn-download-nutmeg-${ev.id}" onclick="event.stopPropagation(); downloadClip('nutmeg', ${ev.id}, ${ev.timestamp_sec}, '${safeGiver}')" class="w-8 h-8 rounded-lg bg-[#0B1733] border border-[#1A2E5A] flex items-center justify-center hover:bg-[#009B3A] hover:text-white transition-colors" title="${downloadTitle}">
                 <span class="material-symbols-outlined text-[16px]">download</span>
               </button>
-              <button onclick="event.stopPropagation(); deleteNutmeg(${ev.id})" title="Delete Caneta" class="w-8 h-8 rounded-lg bg-[#0B1733] border border-[#1A2E5A] flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
+              <button onclick="event.stopPropagation(); deleteNutmeg(${ev.id})" title="Excluir Caneta" class="w-8 h-8 rounded-lg bg-[#0B1733] border border-[#1A2E5A] flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
                 <span class="material-symbols-outlined text-[14px]">delete</span>
               </button>
             </div>
@@ -628,8 +636,8 @@ function populateRosterSelects() {
   if (!scorerSelect || !assistSelect) return;
 
   if (state.players.length === 0) {
-    scorerSelect.innerHTML = '<option value="">No players yet - add players first</option>';
-    assistSelect.innerHTML = '<option value="">None / Solo</option>';
+    scorerSelect.innerHTML = '<option value="">Nenhum jogador cadastrado</option>';
+    assistSelect.innerHTML = '<option value="">Sem assistência / Solo</option>';
     return;
   }
 
@@ -638,7 +646,7 @@ function populateRosterSelects() {
   `).join('');
 
   assistSelect.innerHTML = `
-    <option value="">None / Solo Effort / Rebound</option>
+    <option value="">Nenhum / Jogada Individual / Rebote</option>
     ${state.players.map(p => `<option value="${p.id}">${p.name} (#${p.jersey_number || '0'})</option>`).join('')}
   `;
 }
@@ -648,7 +656,7 @@ async function submitGoalTag(event) {
   const btn = document.getElementById('modal-save-goal-btn');
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span>Saving & Clipping...</span>';
+    btn.innerHTML = '<span>Salvando & Cortando...</span>';
   }
 
   const timestamp_sec = parseFloat(document.getElementById('goal-timestamp-input').value);
@@ -682,7 +690,7 @@ async function submitGoalTag(event) {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">bookmark_add</span><span>Save & Extract 15s Clip</span>';
+      btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">bookmark_add</span><span>Salvar & Cortar Clipe de 15s</span>';
     }
   }
 }
@@ -764,7 +772,7 @@ function closeMatchSheetModal() {
   }
 }
 
-// Leaderboard Engine
+// Leaderboard Engine (Gols, Assistências, Canetas Dadas, Canetas Sofridas - SEM G+A)
 async function loadLeaderboard() {
   try {
     const res = await fetch('/api/leaderboard?season=2026');
@@ -781,7 +789,8 @@ function sortLeaderboard(metric) {
 
   const btnGoals = document.getElementById('btn-sort-goals');
   const btnAssists = document.getElementById('btn-sort-assists');
-  const btnContribs = document.getElementById('btn-sort-contributions');
+  const btnNutmegsGiven = document.getElementById('btn-sort-nutmegs-given');
+  const btnNutmegsTaken = document.getElementById('btn-sort-nutmegs-taken');
 
   if (btnGoals) {
     btnGoals.className = metric === 'goals'
@@ -793,9 +802,14 @@ function sortLeaderboard(metric) {
       ? 'px-3.5 py-1.5 rounded-lg font-bold bg-[#00C2FF] text-[#060D20] transition'
       : 'px-3.5 py-1.5 rounded-lg font-bold text-gray-400 hover:text-white transition';
   }
-  if (btnContribs) {
-    btnContribs.className = metric === 'contributions'
+  if (btnNutmegsGiven) {
+    btnNutmegsGiven.className = metric === 'nutmegs_given'
       ? 'px-3.5 py-1.5 rounded-lg font-bold bg-[#009B3A] text-white transition'
+      : 'px-3.5 py-1.5 rounded-lg font-bold text-gray-400 hover:text-white transition';
+  }
+  if (btnNutmegsTaken) {
+    btnNutmegsTaken.className = metric === 'nutmegs_taken'
+      ? 'px-3.5 py-1.5 rounded-lg font-bold bg-purple-500 text-white transition'
       : 'px-3.5 py-1.5 rounded-lg font-bold text-gray-400 hover:text-white transition';
   }
 
@@ -805,8 +819,10 @@ function sortLeaderboard(metric) {
 function renderLeaderboard() {
   const metric = state.sortMetric;
   const list = [...state.leaderboard].sort((a, b) => {
-    if (b[metric] !== a[metric]) return b[metric] - a[metric];
-    if (metric !== 'goals' && b.goals !== a.goals) return b.goals - a.goals;
+    const valA = a[metric] || 0;
+    const valB = b[metric] || 0;
+    if (valB !== valA) return valB - valA;
+    if (metric !== 'goals' && (b.goals || 0) !== (a.goals || 0)) return (b.goals || 0) - (a.goals || 0);
     return a.name.localeCompare(b.name);
   });
 
@@ -814,7 +830,7 @@ function renderLeaderboard() {
   const miniText = document.getElementById('miniLeaderboardText');
   if (miniText && list.length > 0) {
     const leader = list[0];
-    miniText.textContent = `${leader.name} leads with ${leader[metric]} pts`;
+    miniText.textContent = `${leader.name} lidera com ${leader.goals || 0} gols`;
   }
 
   const podiumContainer = document.getElementById('podium-container');
@@ -825,8 +841,8 @@ function renderLeaderboard() {
     podiumContainer.innerHTML = '';
     tableBody.innerHTML = `
       <tr>
-        <td colspan="7" class="py-12 text-center text-gray-500 text-xs">
-          No players in roster yet.
+        <td colspan="8" class="py-12 text-center text-gray-500 text-xs">
+          Nenhum jogador no elenco ainda.
         </td>
       </tr>
     `;
@@ -834,17 +850,24 @@ function renderLeaderboard() {
   }
 
   // Podium Top 3 Cards
-  const top3 = list.filter(p => p[metric] > 0).slice(0, 3);
+  const top3 = list.filter(p => (p[metric] || 0) > 0).slice(0, 3);
   const medalColors = [
-    { border: 'border-[#FFDF00]/60', bg: 'from-[#FFDF00]/15 to-amber-500/5', badge: '🥇 Artilheiro', text: 'text-[#FFDF00]' },
+    { border: 'border-[#FFDF00]/60', bg: 'from-[#FFDF00]/15 to-amber-500/5', badge: '🥇 1º Lugar', text: 'text-[#FFDF00]' },
     { border: 'border-slate-400/50', bg: 'from-slate-400/10 to-slate-500/5', badge: '🥈 2º Lugar', text: 'text-slate-300' },
     { border: 'border-amber-600/50', bg: 'from-amber-600/10 to-amber-700/5', badge: '🥉 3º Lugar', text: 'text-amber-500' }
   ];
 
+  const metricLabels = {
+    'goals': 'Gols',
+    'assists': 'Assistências',
+    'nutmegs_given': 'Canetas Dadas',
+    'nutmegs_taken': 'Canetas Sofridas'
+  };
+
   if (top3.length === 0) {
     podiumContainer.innerHTML = `
       <div class="col-span-3 bg-[#0B1733] border border-[#1A2E5A] rounded-2xl p-6 text-center text-gray-400 text-xs shadow-lg">
-        ⚽ No goals have been scored yet this season! Log goals during games or on the Sideline Controller.
+        ⚽ Nenhum lance registrado para este critério ainda!
       </div>
     `;
   } else {
@@ -862,18 +885,18 @@ function renderLeaderboard() {
             </div>
           </div>
           <div class="text-right">
-            <p class="text-2xl font-black text-white m-0">${p[metric]}</p>
-            <p class="text-[10px] font-mono uppercase text-gray-400 m-0">${metric}</p>
+            <p class="text-2xl font-black text-white m-0">${p[metric] || 0}</p>
+            <p class="text-[10px] font-mono uppercase text-gray-400 m-0">${metricLabels[metric] || metric}</p>
           </div>
         </div>
       `;
     }).join('');
   }
 
-  // Full Table Body
+  // Full Table Body (Sem G+A, com Canetas Dadas e Canetas Sofridas)
   tableBody.innerHTML = list.map((p, idx) => {
     const rank = idx + 1;
-    const isLeader = rank === 1 && p[metric] > 0;
+    const isLeader = rank === 1 && (p[metric] || 0) > 0;
     return `
       <tr class="hover:bg-[#14234C]/40 cursor-pointer transition ${isLeader ? 'bg-[#FFDF00]/5 font-semibold' : ''}" onclick="openPlayerProfile(${p.id})">
         <td class="py-3 px-4 text-center font-mono font-bold text-xs ${isLeader ? 'text-[#FFDF00]' : 'text-gray-400'}">
@@ -887,13 +910,14 @@ function renderLeaderboard() {
             <span class="text-white hover:text-[#FFDF00] font-bold">${p.name}</span>
           </div>
         </td>
-        <td class="py-3 px-4 text-center font-mono font-extrabold text-sm text-[#FFDF00]">${p.goals}</td>
-        <td class="py-3 px-4 text-center font-mono font-bold text-sm text-[#00C2FF]">${p.assists}</td>
-        <td class="py-3 px-4 text-center font-mono font-black text-sm text-[#009B3A]">${p.contributions}</td>
-        <td class="py-3 px-4 text-center font-mono text-xs text-gray-400">${p.matches}</td>
+        <td class="py-3 px-4 text-center font-mono font-extrabold text-sm text-[#FFDF00]">${p.goals || 0}</td>
+        <td class="py-3 px-4 text-center font-mono font-bold text-sm text-[#00C2FF]">${p.assists || 0}</td>
+        <td class="py-3 px-4 text-center font-mono font-bold text-sm text-[#009B3A]">${p.nutmegs_given || 0}</td>
+        <td class="py-3 px-4 text-center font-mono font-bold text-sm text-purple-400">${p.nutmegs_taken || 0}</td>
+        <td class="py-3 px-4 text-center font-mono text-xs text-gray-400">${p.matches || 1}</td>
         <td class="py-3 px-4 text-right">
           <button class="px-2.5 py-1 rounded-lg bg-[#060D20] border border-[#1A2E5A] hover:bg-[#14234C] text-gray-300 text-xs font-semibold">
-            View Reel
+            Ver Perfil
           </button>
         </td>
       </tr>
@@ -909,10 +933,10 @@ function renderPlayersRoster() {
   if (state.players.length === 0) {
     container.innerHTML = `
       <div class="col-span-full py-16 text-center text-gray-400 text-sm bg-[#0B1733] border border-[#1A2E5A] rounded-2xl p-8">
-        <p class="font-bold text-base text-white mb-1">Your player roster is empty!</p>
-        <p class="text-xs text-gray-400 mb-4">Add your friends and pickup squad players to start tracking goals.</p>
+        <p class="font-bold text-base text-white mb-1">Seu elenco de jogadores está vazio!</p>
+        <p class="text-xs text-gray-400 mb-4">Adicione os amigos da sua pelada para começar a marcar gols e canetas.</p>
         <button onclick="openBatchPlayerModal()" class="px-5 py-2.5 rounded-xl bg-[#FFDF00] text-[#060D20] font-black text-xs inline-flex items-center gap-2">
-          <span>+ Add Multiple Players</span>
+          <span>+ Adicionar Jogadores</span>
         </button>
       </div>
     `;
@@ -935,18 +959,22 @@ function renderPlayersRoster() {
         </div>
       </div>
 
-      <div class="mt-4 pt-3 border-t border-[#1A2E5A]/80 grid grid-cols-3 gap-2 text-center text-xs">
+      <div class="mt-4 pt-3 border-t border-[#1A2E5A]/80 grid grid-cols-4 gap-1 text-center text-xs">
         <div>
-          <span class="text-[#FFDF00] font-black text-base">${p.goals_count || 0}</span>
-          <p class="text-[10px] text-gray-400 uppercase m-0">Goals</p>
+          <span class="text-[#FFDF00] font-black text-sm">${p.goals_count || 0}</span>
+          <p class="text-[9px] text-gray-400 uppercase m-0">Gols</p>
         </div>
         <div>
-          <span class="text-[#00C2FF] font-black text-base">${p.assists_count || 0}</span>
-          <p class="text-[10px] text-gray-400 uppercase m-0">Assists</p>
+          <span class="text-[#00C2FF] font-black text-sm">${p.assists_count || 0}</span>
+          <p class="text-[9px] text-gray-400 uppercase m-0">Assist</p>
         </div>
         <div>
-          <span class="text-[#009B3A] font-black text-base">${p.contributions || 0}</span>
-          <p class="text-[10px] text-gray-400 uppercase m-0">G + A</p>
+          <span class="text-[#009B3A] font-black text-sm">${p.nutmegs_given || 0}</span>
+          <p class="text-[9px] text-gray-400 uppercase m-0">Deu</p>
+        </div>
+        <div>
+          <span class="text-purple-400 font-black text-sm">${p.nutmegs_taken || 0}</span>
+          <p class="text-[9px] text-gray-400 uppercase m-0">Tomou</p>
         </div>
       </div>
     </div>
@@ -954,7 +982,7 @@ function renderPlayersRoster() {
 }
 
 async function removeAllPlayers() {
-  if (!confirm('Are you sure you want to remove ALL players and clear the entire roster and goals? This action cannot be undone.')) {
+  if (!confirm('Tem certeza de que deseja remover TODOS os jogadores e zerar o elenco e gols? Esta ação não pode ser desfeita.')) {
     return;
   }
 
@@ -964,11 +992,11 @@ async function removeAllPlayers() {
       await loadPlayers();
       await loadMatch(state.currentMatchId);
       await loadLeaderboard();
-      alert('All players removed! The roster is now empty.');
+      alert('Todos os jogadores foram removidos.');
     }
   } catch (err) {
     console.error(err);
-    alert('Failed to remove players.');
+    alert('Erro ao remover jogadores.');
   }
 }
 
@@ -1000,7 +1028,7 @@ function addEmptyTableRow(defaultName = '') {
   tr.innerHTML = `
     <td class="py-2 px-3 text-center font-mono text-gray-500 row-index">${rowCount}</td>
     <td class="py-2 px-3">
-      <input type="text" value="${defaultName}" placeholder="e.g. Player Name" class="w-full bg-[#060D20] border border-[#1A2E5A] rounded-lg px-2.5 py-1.5 text-xs text-white player-name-input focus:outline-none focus:border-[#FFDF00]" oninput="updateBatchCount()">
+      <input type="text" value="${defaultName}" placeholder="Ex: Nome do Jogador" class="w-full bg-[#060D20] border border-[#1A2E5A] rounded-lg px-2.5 py-1.5 text-xs text-white player-name-input focus:outline-none focus:border-[#FFDF00]" oninput="updateBatchCount()">
     </td>
     <td class="py-2 px-3 text-center">
       <button type="button" onclick="removeTableRow(this)" class="text-gray-500 hover:text-red-400 p-1">
@@ -1051,7 +1079,7 @@ function updateBatchCount() {
   inputs.forEach(inp => {
     if (inp.value.trim().length > 0) filledCount++;
   });
-  document.getElementById('batch-count-label').textContent = `${filledCount} players ready to add`;
+  document.getElementById('batch-count-label').textContent = `${filledCount} jogadores prontos para adicionar`;
 }
 
 async function submitBatchPlayers() {
@@ -1063,13 +1091,13 @@ async function submitBatchPlayers() {
   });
 
   if (names.length === 0) {
-    alert('Please enter at least one player name.');
+    alert('Por favor, informe ao menos um nome de jogador.');
     return;
   }
 
   const btn = document.getElementById('save-batch-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span>Saving...</span>';
+  btn.innerHTML = '<span>Salvando...</span>';
 
   try {
     const res = await fetch('/api/players/batch', {
@@ -1084,13 +1112,13 @@ async function submitBatchPlayers() {
       await loadLeaderboard();
       renderPlayersRoster();
     } else {
-      alert('Failed to save players.');
+      alert('Erro ao salvar jogadores.');
     }
   } catch (err) {
     console.error(err);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span><span>Save All Players</span>';
+    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span><span>Salvar Todos os Jogadores</span>';
   }
 }
 
@@ -1105,13 +1133,14 @@ async function openPlayerProfile(playerId) {
     avatar.textContent = `#${player.jersey_number || '10'}`;
   }
   document.getElementById('profile-modal-name').textContent = player.name;
-  document.getElementById('profile-modal-meta').textContent = `#${player.jersey_number || '10'} • Player Profile`;
+  document.getElementById('profile-modal-meta').textContent = `#${player.jersey_number || '10'} • Perfil do Craque`;
   document.getElementById('profile-stat-goals').textContent = player.goals_count || 0;
   document.getElementById('profile-stat-assists').textContent = player.assists_count || 0;
-  document.getElementById('profile-stat-contributions').textContent = (player.goals_count || 0) + (player.assists_count || 0);
+  document.getElementById('profile-stat-nutmegs-given').textContent = player.nutmegs_given || 0;
+  document.getElementById('profile-stat-nutmegs-taken').textContent = player.nutmegs_taken || 0;
 
   const clipsContainer = document.getElementById('profile-clips-container');
-  clipsContainer.innerHTML = '<p class="text-xs text-gray-400 py-3">Loading highlight reel...</p>';
+  clipsContainer.innerHTML = '<p class="text-xs text-gray-400 py-3">Carregando melhores momentos...</p>';
   
   const modal = document.getElementById('player-profile-modal');
   modal.classList.remove('hidden');
@@ -1125,7 +1154,7 @@ async function openPlayerProfile(playerId) {
     if (goals.length === 0) {
       clipsContainer.innerHTML = `
         <div class="text-center py-6 text-gray-500 text-xs">
-          No goals recorded yet this season.
+          Nenhum gol gravado nesta temporada ainda.
         </div>
       `;
       return;
@@ -1139,16 +1168,16 @@ async function openPlayerProfile(playerId) {
           </div>
           <div>
             <h5 class="text-xs font-bold text-white m-0">${g.game_name || 'Game 1'}</h5>
-            <p class="text-[11px] text-gray-400 m-0">${g.assist_name ? `Assist: ${g.assist_name}` : 'Solo Finish'}</p>
+            <p class="text-[11px] text-gray-400 m-0">${g.assist_name ? `Assist: ${g.assist_name}` : 'Gol Solo'}</p>
           </div>
         </div>
         <button onclick="playGoalInStudio(${g.match_id}, ${g.timestamp_sec})" class="px-3 py-1.5 rounded-lg bg-[#FFDF00]/20 hover:bg-[#FFDF00] text-[#FFDF00] hover:text-[#060D20] font-bold text-xs transition flex items-center gap-1">
-          <span class="material-symbols-outlined text-[14px]">play_arrow</span> Play
+          <span class="material-symbols-outlined text-[14px]">play_arrow</span> Ver Lance
         </button>
       </div>
     `).join('');
   } catch (err) {
-    clipsContainer.innerHTML = '<p class="text-xs text-red-400">Failed to load reel.</p>';
+    clipsContainer.innerHTML = '<p class="text-xs text-red-400">Erro ao carregar lances.</p>';
   }
 }
 
@@ -1233,14 +1262,14 @@ function resetFileBox(cam) {
   if (input) input.value = '';
 
   if (badge) {
-    badge.textContent = 'None chosen';
+    badge.textContent = 'Nenhum';
     badge.className = 'font-mono text-[10px] text-gray-400';
   }
   if (filename) {
-    filename.textContent = 'Click or drag & drop video (.mp4, .mov)';
+    filename.textContent = 'Clique ou arraste o vídeo (.mp4, .mov)';
   }
   if (filesize) {
-    filesize.textContent = cam === 'cam1' ? 'Phone 1 recording' : 'Phone 2 recording';
+    filesize.textContent = cam === 'cam1' ? 'Gravação Celular 1' : 'Gravação Celular 2';
   }
 }
 
@@ -1255,7 +1284,7 @@ function handleFileSelected(cam, file) {
   const filesize = document.getElementById(`${cam}-filesize`);
 
   if (badge) {
-    badge.textContent = 'Ready ✓';
+    badge.textContent = 'Pronto ✓';
     badge.className = cam === 'cam1'
       ? 'font-mono text-[10px] text-[#009B3A] font-bold'
       : 'font-mono text-[10px] text-[#00C2FF] font-bold';
@@ -1307,7 +1336,7 @@ function setupDragAndDrop() {
 
 function startDirectUpload() {
   if (!uploadState.cam1File && !uploadState.cam2File) {
-    showUploadAlert('Please select at least one video file for Camera 1 or Camera 2.', 'error');
+    showUploadAlert('Selecione ao menos um arquivo de vídeo para a Câmera 1 ou 2.', 'error');
     return;
   }
 
@@ -1321,7 +1350,7 @@ function startDirectUpload() {
   uploadBtn.disabled = true;
   progressFill.style.width = '0%';
   percentText.textContent = '0%';
-  statusText.textContent = 'Uploading match video(s)...';
+  statusText.textContent = 'Enviando vídeos da partida...';
 
   const formData = new FormData();
   formData.append('match_id', state.currentMatchId || 1);
@@ -1338,7 +1367,7 @@ function startDirectUpload() {
       percentText.textContent = `${pct}%`;
       const loadedMb = (e.loaded / (1024 * 1024)).toFixed(1);
       const totalMb = (e.total / (1024 * 1024)).toFixed(1);
-      statusText.textContent = `Uploading: ${loadedMb} MB / ${totalMb} MB (${pct}%)`;
+      statusText.textContent = `Enviando: ${loadedMb} MB / ${totalMb} MB (${pct}%)`;
     }
   };
 
@@ -1346,8 +1375,8 @@ function startDirectUpload() {
     if (xhr.status >= 200 && xhr.status < 300) {
       progressFill.style.width = '100%';
       percentText.textContent = '100%';
-      statusText.textContent = 'Upload complete! Attaching to match studio...';
-      showUploadAlert('✅ Video(s) successfully uploaded and linked to match!', 'success');
+      statusText.textContent = 'Envio concluído! Vinculando ao estúdio...';
+      showUploadAlert('✅ Vídeo(s) enviados com sucesso!', 'success');
 
       setTimeout(async () => {
         await loadMatch(state.currentMatchId || 1);
@@ -1355,13 +1384,13 @@ function startDirectUpload() {
       }, 1200);
     } else {
       uploadBtn.disabled = false;
-      showUploadAlert(`Upload failed (Status ${xhr.status}): ${xhr.responseText}`, 'error');
+      showUploadAlert(`Falha no upload (Status ${xhr.status}): ${xhr.responseText}`, 'error');
     }
   };
 
   xhr.onerror = () => {
     uploadBtn.disabled = false;
-    showUploadAlert('Network error occurred during video upload. Please check your connection.', 'error');
+    showUploadAlert('Erro de rede durante o upload do vídeo.', 'error');
   };
 
   xhr.send(formData);
@@ -1394,7 +1423,7 @@ async function refreshAvailableVideosList() {
     const select2 = document.getElementById('folder-cam2-select');
     if (!select1 || !select2) return;
 
-    let optionsHtml = '<option value="">-- Choose video file --</option>';
+    let optionsHtml = '<option value="">-- Escolher arquivo de vídeo --</option>';
     uploadState.availableVideos.forEach(v => {
       optionsHtml += `<option value="${v.url}">${v.filename} (${v.size_mb} MB)</option>`;
     });
@@ -1416,7 +1445,7 @@ function copyMacVideosPath() {
   if (!pathInput) return;
   navigator.clipboard.writeText(pathInput.value).then(() => {
     const orig = pathInput.value;
-    pathInput.value = '✓ Path copied to clipboard!';
+    pathInput.value = '✓ Caminho copiado!';
     setTimeout(() => { pathInput.value = orig; }, 1500);
   }).catch(() => {
     pathInput.select();
@@ -1435,7 +1464,7 @@ async function applyExistingFolderVideos() {
     if (alertEl) {
       alertEl.classList.remove('hidden');
       alertEl.className = 'p-3 rounded-xl text-xs font-medium border bg-red-950/40 border-red-800 text-red-300';
-      alertEl.textContent = 'Please select at least one video from the folder.';
+      alertEl.textContent = 'Por favor, selecione ao menos um vídeo da pasta.';
     }
     return;
   }
@@ -1455,7 +1484,7 @@ async function applyExistingFolderVideos() {
       if (alertEl) {
         alertEl.classList.remove('hidden');
         alertEl.className = 'p-3 rounded-xl text-xs font-medium border bg-emerald-950/40 border-emerald-800 text-emerald-300';
-        alertEl.textContent = '✅ Videos updated! Reloading match player...';
+        alertEl.textContent = '✅ Vídeos aplicados! Atualizando player...';
       }
       setTimeout(async () => {
         await loadMatch(state.currentMatchId || 1);
@@ -1466,14 +1495,14 @@ async function applyExistingFolderVideos() {
       if (alertEl) {
         alertEl.classList.remove('hidden');
         alertEl.className = 'p-3 rounded-xl text-xs font-medium border bg-red-950/40 border-red-800 text-red-300';
-        alertEl.textContent = err.error || 'Failed to update match videos.';
+        alertEl.textContent = err.error || 'Erro ao aplicar vídeos.';
       }
     }
   } catch (err) {
     if (alertEl) {
       alertEl.classList.remove('hidden');
       alertEl.className = 'p-3 rounded-xl text-xs font-medium border bg-red-950/40 border-red-800 text-red-300';
-      alertEl.textContent = 'Error updating videos: ' + err.message;
+      alertEl.textContent = 'Erro ao aplicar vídeos: ' + err.message;
     }
   }
 }

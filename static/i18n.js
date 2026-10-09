@@ -2,7 +2,7 @@
 // Supported: English (EN), Brazilian Portuguese (PT-BR), French (FR), Spanish (ES)
 
 const I18N = {
-  currentLang: localStorage.getItem('pitchstat_lang') || 'en',
+  currentLang: localStorage.getItem('pitchstat_lang') || 'pt-br',
 
   translations: {
     en: {
@@ -12,14 +12,14 @@ const I18N = {
       nav_studio: "Match Studio",
       nav_leaderboard: "Leaderboard",
       nav_players: "Players",
-      nav_live: "Sideline Live 🔒",
+      nav_live: "Celular Timer",
       add_players_btn: "+ Add Players",
       add_multiple_players: "+ Add Multiple Players",
       remove_all_players: "Remove All Players",
       remove_all_confirm: "Are you sure you want to remove ALL players and clear the entire roster and goals? This cannot be undone.",
 
       // Studio
-      pickup_match_studio: "Pickup Match Studio",
+      pickup_match_studio: "Match Studio",
       studio_season_meta: "2026 Season • Logged Goals & Highlight Clips",
       total_goals: "Total Goals:",
       active_angle: "Active Angle:",
@@ -149,7 +149,7 @@ const I18N = {
       nav_studio: "Estúdio de Vídeo",
       nav_leaderboard: "Artilharia e Líderes",
       nav_players: "Jogadores",
-      nav_live: "Controle da Lateral 🔒",
+      nav_live: "Celular Timer",
       add_players_btn: "+ Adicionar Jogadores",
       add_multiple_players: "+ Adicionar Vários Jogadores",
       remove_all_players: "Remover Todos os Jogadores",

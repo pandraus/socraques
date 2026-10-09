@@ -164,12 +164,16 @@ class PitchStatHandler(SimpleHTTPRequestHandler):
                 cursor.execute("""
                     SELECT p.*,
                         COUNT(DISTINCT g.id) AS goals_count,
-                        COUNT(DISTINCT a.id) AS assists_count
+                        COUNT(DISTINCT a.id) AS assists_count,
+                        COUNT(DISTINCT ng.id) AS nutmegs_given,
+                        COUNT(DISTINCT nt.id) AS nutmegs_taken
                     FROM players p
                     LEFT JOIN goals g ON g.scorer_id = p.id
                     LEFT JOIN goals a ON a.assist_id = p.id
+                    LEFT JOIN nutmegs ng ON ng.giver_id = p.id
+                    LEFT JOIN nutmegs nt ON nt.receiver_id = p.id
                     GROUP BY p.id
-                    ORDER BY goals_count DESC, assists_count DESC, p.name ASC
+                    ORDER BY goals_count DESC, assists_count DESC, nutmegs_given DESC, p.name ASC
                 """)
                 players = [dict(row) for row in cursor.fetchall()]
                 for pl in players:
@@ -243,12 +247,16 @@ class PitchStatHandler(SimpleHTTPRequestHandler):
                     SELECT p.id, p.name, p.nickname, p.jersey_number, p.position, p.avatar_color,
                            COUNT(DISTINCT g.id) AS goals,
                            COUNT(DISTINCT a.id) AS assists,
+                           COUNT(DISTINCT ng.id) AS nutmegs_given,
+                           COUNT(DISTINCT nt.id) AS nutmegs_taken,
                            COUNT(DISTINCT CASE WHEN g.match_id IS NOT NULL THEN g.match_id END) AS goal_matches
                     FROM players p
                     LEFT JOIN goals g ON g.scorer_id = p.id
                     LEFT JOIN goals a ON a.assist_id = p.id
+                    LEFT JOIN nutmegs ng ON ng.giver_id = p.id
+                    LEFT JOIN nutmegs nt ON nt.receiver_id = p.id
                     GROUP BY p.id
-                    ORDER BY goals DESC, assists DESC, p.name ASC
+                    ORDER BY goals DESC, assists DESC, nutmegs_given DESC, p.name ASC
                 """)
                 players = [dict(row) for row in cursor.fetchall()]
                 for p in players:
