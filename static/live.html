@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SóCraques Live | Sideline Timer & Goal Logger</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter / Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@600;800;900&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="i18n.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    button, input, select {
+      touch-action: manipulation;
+    }
+    .goal-pulse-btn {
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.45);
+      animation: pulse-glow 2.5s infinite ease-in-out;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+      50% { transform: scale(1.02); box-shadow: 0 0 35px rgba(16, 185, 129, 0.7); }
+    }
+
+    /* RED BLINKING WARNING (10 SECONDS LEFT) */
+    @keyframes red-flash {
+      0%, 100% {
+        background-color: #020617;
+      }
+      50% {
+        background-color: #881337;
+      }
+    }
+    .red-warning-active {
+      animation: red-flash 0.45s infinite ease-in-out !important;
+    }
+    .red-card-flash {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 50px rgba(239, 68, 68, 0.8) !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-black transition-colors duration-200">
+
+  <!-- ======================================================== -->
+  <!-- 1. PASSWORD GATE (CLOSED PORTAL)                         -->
+  <!-- ======================================================== -->
+  <div id="auth-lockscreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-3xl shadow-lg">
+        🔒
+      </div>
+      <div>
+        <h2 class="text-xl font-black text-white" data-i18n="portal_title">Sideline Match Portal</h2>
+        <p class="text-xs text-slate-400 mt-1" data-i18n="portal_sub">Authorized match tracker for referees, captains & bench players.</p>
+      </div>
+
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+        <div>
+          <input type="password" id="auth-password-input" required placeholder="Enter Match Password" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-center text-sm font-mono text-white tracking-widest focus:outline-none focus:border-emerald-500">
+          <p class="text-[11px] text-slate-500 mt-1.5" data-i18n="pass_hint">Password hint: pitch2026</p>
+        </div>
+        <p id="auth-error-msg" class="text-xs text-red-400 hidden font-semibold"></p>
+        <button type="submit" id="auth-submit-btn" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm transition shadow-lg shadow-emerald-500/20" data-i18n="unlock_btn">
+          Unlock Sideline Controller
+        </button>
+      </form>
+
+      <!-- Language Selector on Lockscreen -->
+      <div class="pt-2 flex items-center justify-center gap-2">
+        <select onchange="changeLanguage(this.value)" class="lang-selector-select bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1 focus:outline-none">
+          <option value="en">🇺🇸 English</option>
+          <option value="pt-br">🇧🇷 Português (BR)</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="es">🇪🇸 Español</option>
+        </select>
+      </div>
+
+      <div class="pt-2 border-t border-slate-800/80">
+        <a href="/" class="text-xs text-slate-400 hover:text-white transition flex items-center justify-center gap-1" data-i18n="back_to_studio">
+          <span>← Back to Video Studio & Leaderboard</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 2. MAIN SIDELINE INTERFACE (WHEN UNLOCKED)               -->
+  <!-- ======================================================== -->
+  <div id="live-main-content" class="max-w-md mx-auto min-h-screen px-4 py-4 flex flex-col justify-between hidden">
+
+    <!-- Top Navigation & Language Switcher -->
+    <header class="flex items-center justify-between pb-3 border-b border-slate-800">
+      <div class="flex items-center gap-2">
+        <a href="/" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" title="Match Studio">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        </a>
+        <div>
+          <span class="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            LIVE CONTROLLER
+          </span>
+          <h1 class="text-xs font-bold text-slate-300" data-i18n="sideline_title">Pickup Soccer Games</h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <!-- 4-Language Dropdown -->
+        <select onchange="changeLanguage(this.value)" class="lang-selector-select bg-slate-900 border border-slate-800 text-slate-300 text-xs font-bold rounded-xl px-2 py-1.5 focus:outline-none">
+          <option value="en">🇺🇸 EN</option>
+          <option value="pt-br">🇧🇷 PT</option>
+          <option value="fr">🇫🇷 FR</option>
+          <option value="es">🇪🇸 ES</option>
+        </select>
+
+        <!-- Whistle Button -->
+        <button onclick="playWhistleSound()" title="Test Whistle Sound" class="px-2 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1">
+          <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+          <span data-i18n="whistle_btn">Whistle</span>
+        </button>
+
+        <button onclick="logout()" title="Lock Screen" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-red-400 text-xs flex items-center gap-1">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ======================================================== -->
+    <!-- CAMERA MASTER CLOCK (CONTINUOUS SESSION RECORDING)       -->
+    <!-- ======================================================== -->
+    <div class="my-2.5 bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/30 rounded-2xl p-3.5 shadow-xl space-y-2.5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-600" id="master-status-dot"></span>
+          <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300" data-i18n="master_clock_title">
+            Camera Master Clock (Continuous)
+          </span>
+        </div>
+        <span class="font-mono text-xs font-black text-emerald-400 px-2 py-0.5 rounded bg-slate-950 border border-emerald-500/20" id="master-clock-display">
+          00:00:00
+        </span>
+      </div>
+
+      <!-- Master Clock Instructions Card -->
+      <div class="bg-slate-950/70 rounded-xl p-2.5 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+        <p class="font-bold text-slate-300 flex items-center gap-1" data-i18n="master_instructions_title">
+          <i data-lucide="info" class="w-3 h-3 text-emerald-400"></i>
+          How continuous recording sync works:
+        </p>
+        <p class="text-[10px] leading-tight" data-i18n="master_instruction_1">1. Press RECORD on both phones at the pitch.</p>
+        <p class="text-[10px] leading-tight" data-i18n="master_instruction_2">2. Tap 'Start Master Clock' at the same moment.</p>
+        <p class="text-[10px] leading-tight text-emerald-400/90" data-i18n="master_instruction_3">3. Run short 10-minute games freely below — goals automatically lock to the exact video frame!</p>
+      </div>
+
+      <!-- Master Clock Start / Stop Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btn-master-toggle" onclick="toggleMasterClock()" class="flex-1 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95">
+          <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+          <span id="label-master-toggle" data-i18n="start_master_btn">▶ Start Master Clock (With Cameras)</span>
+        </button>
+
+        <button id="btn-master-stop" onclick="stopMasterSessionPrompt()" class="hidden px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 font-bold text-xs flex items-center justify-center gap-1 transition active:scale-95" title="End Full Recording">
+          <i data-lucide="square" class="w-3.5 h-3.5 fill-current"></i>
+          <span data-i18n="stop_master_btn">⏹ Stop</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Game Name Text Field (Game 1, Game 2, etc.) -->
+    <div class="mb-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 shadow-lg">
+      <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between">
+        <span class="flex items-center gap-1.5 text-white" data-i18n="current_game_label">
+          <i data-lucide="tag" class="w-3 h-3 text-emerald-400"></i>
+          Current Game Name / Round
+        </span>
+      </label>
+      <div class="flex items-center gap-2">
+        <input type="text" id="live-game-name" value="Game 1" placeholder="e.g. Game 1, Game 2" class="flex-1 bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-1.5 text-xs font-bold text-emerald-400 tracking-wide focus:outline-none focus:border-emerald-500">
+        <button onclick="incrementGameName()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1 whitespace-nowrap" data-i18n="next_game_btn">
+          Next Game →
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Scoreboard Card -->
+    <div class="mb-2 bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-800 rounded-2xl p-2.5 shadow-xl flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+        <span class="text-xs font-bold text-slate-300" id="game-score-badge" data-i18n="game_score_badge">Game 1 Score</span>
+      </div>
+      <div class="px-3 py-1 rounded-xl bg-slate-950 border border-slate-800 text-center">
+        <span class="font-mono text-lg font-black text-emerald-400 tracking-tight" id="live-score-display">0 Goals</span>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MATCH TIMER: 10S RED BLINKING & 0S WHISTLE SOUND        -->
+    <!-- ======================================================== -->
+    <div id="timer-card" class="bg-slate-900 border-2 border-slate-800 rounded-3xl p-4 text-center shadow-2xl relative overflow-hidden space-y-2.5 transition-all duration-300">
+      <div class="flex items-center justify-between px-1">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400" id="timer-status-dot"></span>
+          <span class="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-400" id="timer-status-text" data-i18n="timer_ready">
+            TIMER READY
+          </span>
+        </div>
+        <span class="text-[10px] font-mono text-slate-500" id="elapsed-time-label">00:00 elapsed</span>
+      </div>
+
+      <!-- Final 10 Seconds Warning Banner -->
+      <div id="timer-warning-banner" class="hidden text-xs font-mono font-black text-red-400 uppercase tracking-widest animate-bounce" data-i18n="final_10_sec">
+        ⚠️ FINAL 10 SECONDS!
+      </div>
+
+      <!-- TIMER COUNTDOWN DISPLAY: MINUTES AND SECONDS LEFT -->
+      <div>
+        <div class="font-mono text-6xl font-black text-white tracking-tighter" id="countdown-display">
+          00:00
+        </div>
+        <p class="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold mt-0.5" id="countdown-subtitle" data-i18n="min_sec_left">
+          ⏱ MINUTES & SECONDS LEFT
+        </p>
+      </div>
+
+      <!-- 1-Minute Increment Adjuster Buttons -->
+      <div class="flex items-center justify-center gap-1.5">
+        <button onclick="addMinutes(1)" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono text-xs font-bold transition flex items-center justify-center gap-1 border border-emerald-500/20 active:scale-95">
+          <span>+1 Min</span>
+        </button>
+        <button onclick="addMinutes(5)" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs font-bold transition">
+          +5m
+        </button>
+        <button onclick="setQuickGame(10)" class="py-1.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-mono text-xs font-bold transition border border-emerald-500/30">
+          10m Game
+        </button>
+        <button onclick="subtractMinute()" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 font-mono text-xs font-bold transition">
+          -1m
+        </button>
+        <button onclick="resetTimerZero()" class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition" title="Clear to 0:00">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <!-- Timer Main Controls: START / PAUSE + END GAME EARLY -->
+      <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+        <button id="btn-start-pause" onclick="toggleTimer()" class="flex-1 py-3 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/20 active:scale-95">
+          <i data-lucide="play" class="w-4 h-4 fill-current" id="icon-play-pause"></i>
+          <span id="label-start-pause" data-i18n="start_timer">START TIMER</span>
+        </button>
+
+        <button onclick="endGameEarly()" class="py-3 px-3.5 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 font-extrabold text-xs flex items-center justify-center gap-1.5 transition active:scale-95">
+          <i data-lucide="flag" class="w-3.5 h-3.5"></i>
+          <span data-i18n="end_early">End Early</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- GIANT ACTION BUTTONS: "GOAL!" & "CANETA! / NUTMEG!"     -->
+    <!-- ======================================================== -->
+    <div class="my-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <button id="giant-goal-btn" onclick="onGoalButtonClicked()" class="w-full py-4 rounded-3xl bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-2xl tracking-tight flex items-center justify-center gap-2.5 transition transform active:scale-95 goal-pulse-btn shadow-2xl">
+        <span class="text-3xl animate-bounce">⚽</span>
+        <span id="goal-btn-label">GOAL!</span>
+      </button>
+
+      <button id="giant-nutmeg-btn" onclick="onNutmegButtonClicked()" class="w-full py-4 rounded-3xl bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-black text-2xl tracking-tight flex items-center justify-center gap-2.5 transition transform active:scale-95 shadow-2xl shadow-purple-900/40 border border-purple-400/30">
+        <span class="text-3xl">🪄</span>
+        <span id="nutmeg-btn-label" data-i18n="nutmeg_btn">CANETA! 🪄</span>
+      </button>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- GOAL ATTRIBUTION FORM (DUAL CLOCKS LOGGED SILENTLY)      -->
+    <!-- ======================================================== -->
+    <div id="goal-input-card" class="bg-slate-900 border-2 border-emerald-500/70 rounded-3xl p-4 shadow-2xl space-y-3 mb-3 hidden animate-in fade-in slide-in-from-top-4 duration-200">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">⚽</span>
+          <div>
+            <h4 class="text-sm font-black text-white" data-i18n="log_goal_event">Log Goal Event</h4>
+            <p class="text-[11px] text-slate-400">
+              For <span id="captured-game-badge" class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold font-mono">Game 1</span>
+              at <span id="captured-minute-label" class="font-mono text-white font-bold">04:28</span>
+            </p>
+          </div>
+        </div>
+        <button onclick="cancelGoalInput()" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="live-goal-form" onsubmit="submitLiveGoal(event)" class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="game_name_round">
+            Game Name / Round:
+          </label>
+          <input type="text" id="modal-game-name" value="Game 1" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-emerald-400 font-bold font-mono focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-200 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <span data-i18n="who_scored">Who scored the goal? *</span>
+          </label>
+          <input type="text" id="live-scorer-input" required placeholder="e.g. Mateo, Paulo, Leo..." autocomplete="off" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white font-bold focus:outline-none focus:border-emerald-500">
+          <div id="scorer-quick-chips" class="flex flex-wrap gap-1 mt-1.5 max-h-16 overflow-y-auto"></div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-200 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <span data-i18n="who_assisted">Who gave the assist?</span>
+          </label>
+          <div class="flex gap-1.5">
+            <input type="text" id="live-assist-input" placeholder="e.g. William, Carlos, Sami..." autocomplete="off" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white font-semibold focus:outline-none focus:border-blue-500">
+            <button type="button" onclick="setAssistSolo()" class="px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold whitespace-nowrap" data-i18n="solo_none">
+              Solo / None
+            </button>
+          </div>
+          <div id="assist-quick-chips" class="flex flex-wrap gap-1 mt-1.5 max-h-16 overflow-y-auto"></div>
+        </div>
+
+        <div class="pt-1 flex items-center gap-2">
+          <button type="button" onclick="cancelGoalInput()" class="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold" data-i18n="cancel">
+            Cancel
+          </button>
+          <button type="submit" id="btn-confirm-live-goal" class="flex-2 py-2 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/25">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span data-i18n="log_goal_submit">Log Goal & Update Score!</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- CANETA / NUTMEG ATTRIBUTION FORM                         -->
+    <!-- ======================================================== -->
+    <div id="nutmeg-input-card" class="bg-slate-900 border-2 border-purple-500/70 rounded-3xl p-4 shadow-2xl space-y-3 mb-3 hidden animate-in fade-in slide-in-from-top-4 duration-200">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🪄</span>
+          <div>
+            <h4 class="text-sm font-black text-white" data-i18n="nutmeg_title">Registrar Caneta 🪄</h4>
+            <p class="text-[11px] text-slate-400">
+              For <span id="nutmeg-captured-game-badge" class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 font-bold font-mono">Game 1</span>
+              at <span id="nutmeg-captured-minute-label" class="font-mono text-white font-bold">04:28</span>
+            </p>
+          </div>
+        </div>
+        <button onclick="cancelNutmegInput()" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="live-nutmeg-form" onsubmit="submitLiveNutmeg(event)" class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="game_name_round">
+            Game Name / Round:
+          </label>
+          <input type="text" id="nutmeg-modal-game-name" value="Game 1" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-purple-400 font-bold font-mono focus:outline-none focus:border-purple-500">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-purple-300 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <span data-i18n="nutmeg_giver">Quem deu a caneta? (Deu caneta) *</span>
+          </label>
+          <input type="text" id="live-nutmeg-giver-input" required placeholder="e.g. Mateo, Paulo, Leo..." autocomplete="off" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white font-bold focus:outline-none focus:border-purple-500">
+          <div id="nutmeg-giver-quick-chips" class="flex flex-wrap gap-1 mt-1.5 max-h-16 overflow-y-auto"></div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-amber-300 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <span data-i18n="nutmeg_receiver">Quem tomou caneta? (Tomou caneta) *</span>
+          </label>
+          <input type="text" id="live-nutmeg-receiver-input" required placeholder="e.g. William, Carlos, Sami..." autocomplete="off" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white font-bold focus:outline-none focus:border-amber-500">
+          <div id="nutmeg-receiver-quick-chips" class="flex flex-wrap gap-1 mt-1.5 max-h-16 overflow-y-auto"></div>
+        </div>
+
+        <div class="pt-1 flex items-center gap-2">
+          <button type="button" onclick="cancelNutmegInput()" class="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold" data-i18n="cancel">
+            Cancel
+          </button>
+          <button type="submit" id="btn-confirm-live-nutmeg" class="flex-2 py-2 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-purple-500/25 transition active:scale-95">
+            <span>🪄</span>
+            <span data-i18n="nutmeg_submit">Registrar Caneta!</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Match Goal Feed -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-xl space-y-2 mt-auto">
+      <div class="flex items-center justify-between pb-1.5 border-b border-slate-800">
+        <h5 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span data-i18n="goals_logged">Logged Match Goals</span>
+        </h5>
+        <span class="text-[10px] text-slate-500 font-mono" id="live-goals-count">0 goals</span>
+      </div>
+      <div id="live-goals-timeline" class="space-y-1.5 max-h-32 overflow-y-auto pr-1"></div>
+    </div>
+
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: END GAME EARLY SUMMARY                            -->
+  <!-- ======================================================== -->
+  <div id="end-game-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto text-2xl">
+        🏁
+      </div>
+      <div>
+        <h3 class="text-lg font-black text-white" id="modal-ended-title">Game 1 Ended Early!</h3>
+        <p class="text-xs text-slate-400 mt-1" data-i18n="end_early_sub">Final score locked and all player goals are saved to the leaderboard.</p>
+      </div>
+
+      <div class="p-3 bg-slate-950 border border-slate-800 rounded-2xl">
+        <p class="text-[10px] font-mono uppercase text-slate-400">Final Result</p>
+        <p class="text-2xl font-black text-emerald-400" id="modal-ended-score">Game 1: 0 Goals</p>
+      </div>
+
+      <div class="space-y-2 pt-2">
+        <button onclick="startNextGameFromModal()" class="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+          <span data-i18n="start_next_game_modal">▶ Start Next Game (Game 2)</span>
+        </button>
+        <button onclick="closeEndGameModal()" class="w-full py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Audio engine: HTML5 Audio + Web Audio API synthesizer
+    const whistleAudio = new Audio('/sounds/whistle.mp3');
+    whistleAudio.preload = 'auto';
+
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playSyntheticWhistle() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+
+        function burst(start, duration) {
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(2800, start);
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(3120, start);
+
+          osc1.frequency.exponentialRampToValueAtTime(2600, start + duration);
+          osc2.frequency.exponentialRampToValueAtTime(2880, start + duration);
+
+          gain.gain.setValueAtTime(0.001, start);
+          gain.gain.linearRampToValueAtTime(0.7, start + 0.02);
+          gain.gain.setValueAtTime(0.7, start + duration - 0.03);
+          gain.gain.linearRampToValueAtTime(0.001, start + duration);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc1.start(start);
+          osc2.start(start);
+          osc1.stop(start + duration);
+          osc2.stop(start + duration);
+        }
+
+        burst(now, 0.20);
+        burst(now + 0.30, 0.20);
+        burst(now + 0.60, 0.95);
+      } catch (e) {
+        console.warn('Synth error:', e);
+      }
+    }
+
+    function playWhistleSound() {
+      getAudioContext();
+      try {
+        whistleAudio.currentTime = 0;
+        const p = whistleAudio.play();
+        if (p !== undefined) {
+          p.catch(() => playSyntheticWhistle());
+        }
+      } catch (e) {
+        playSyntheticWhistle();
+      }
+      playSyntheticWhistle();
+    }
+
+    // Live State with DUAL CLOCKS (Master Clock + Game Timer)
+    let liveState = {
+      matchId: 1,
+      match: null,
+      players: [],
+      gameNumber: 1,
+
+      // Clock 1: Individual Game Timer (resets, ends early, 10m countdown)
+      secondsLeft: 0,
+      gameElapsedSeconds: 0,
+      isRunning: false,
+      intervalId: null,
+
+      // Clock 2: Continuous Camera Master Clock
+      masterSeconds: 0,
+      isMasterRunning: false,
+      masterIntervalId: null,
+
+      // Captured timestamps for goal logging
+      capturedGameElapsed: 0,
+      capturedMasterSec: 0,
+
+      // Captured timestamps for nutmeg logging
+      capturedNutmegGameElapsed: 0,
+      capturedNutmegMasterSec: 0
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.lucide) lucide.createIcons();
+      I18N.applyTranslations();
+      checkAuth();
+      document.body.addEventListener('touchstart', () => getAudioContext(), { once: true });
+      document.body.addEventListener('click', () => getAudioContext(), { once: true });
+    });
+
+    function changeLanguage(lang) {
+      I18N.setLanguage(lang);
+      updateDisplay();
+      renderLiveGoals();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function checkAuth() {
+      const token = sessionStorage.getItem('pitchstat_live_token');
+      if (token) {
+        document.getElementById('auth-lockscreen').classList.add('hidden');
+        document.getElementById('live-main-content').classList.remove('hidden');
+        initLiveMatch();
+      } else {
+        document.getElementById('auth-lockscreen').classList.remove('hidden');
+        document.getElementById('live-main-content').classList.add('hidden');
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const pass = document.getElementById('auth-password-input').value;
+      const errorEl = document.getElementById('auth-error-msg');
+      const submitBtn = document.getElementById('auth-submit-btn');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Verifying...';
+
+      try {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pass })
+        });
+        const data = await res.json();
+        if (res.ok && data.authenticated) {
+          sessionStorage.setItem('pitchstat_live_token', data.token);
+          checkAuth();
+        } else {
+          errorEl.textContent = data.error || 'Incorrect password.';
+          errorEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorEl.textContent = 'Connection error.';
+        errorEl.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = I18N.t('unlock_btn');
+      }
+    }
+
+    function logout() {
+      sessionStorage.removeItem('pitchstat_live_token');
+      checkAuth();
+    }
+
+    async function initLiveMatch() {
+      await fetchPlayers();
+      await fetchMatch(liveState.matchId);
+      updateDisplay();
+      updateMasterDisplay();
+    }
+
+    async function fetchPlayers() {
+      try {
+        const res = await fetch('/api/players');
+        const data = await res.json();
+        liveState.players = data.players || [];
+        renderQuickChips();
+        renderNutmegQuickChips();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function fetchMatch(id) {
+      try {
+        const res = await fetch(`/api/matches/${id}`);
+        const data = await res.json();
+        liveState.match = data.match;
+        renderLiveGoals();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ==========================================
+    // REQUIREMENT 1 & 3: MASTER CLOCK CONTROLS
+    // ==========================================
+    function toggleMasterClock() {
+      if (liveState.isMasterRunning) {
+        stopMasterSessionPrompt();
+      } else {
+        startMasterClock();
+      }
+    }
+
+    function startMasterClock() {
+      if (liveState.isMasterRunning) return;
+      liveState.isMasterRunning = true;
+      getAudioContext();
+
+      liveState.masterIntervalId = setInterval(() => {
+        liveState.masterSeconds++;
+        updateMasterDisplay();
+      }, 1000);
+
+      document.getElementById('master-status-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+      document.getElementById('label-master-toggle').textContent = I18N.t('master_clock_running');
+      document.getElementById('btn-master-toggle').className = 'flex-1 py-2 rounded-xl bg-emerald-500/30 border border-emerald-500 text-emerald-200 font-bold text-xs flex items-center justify-center gap-1.5 transition';
+      document.getElementById('btn-master-stop').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function stopMasterSessionPrompt() {
+      if (!confirm(I18N.t('master_stop_confirm'))) return;
+      stopMasterClock();
+    }
+
+    function stopMasterClock() {
+      liveState.isMasterRunning = false;
+      if (liveState.masterIntervalId) {
+        clearInterval(liveState.masterIntervalId);
+        liveState.masterIntervalId = null;
+      }
+      document.getElementById('master-status-dot').className = 'w-2.5 h-2.5 rounded-full bg-slate-600';
+      document.getElementById('label-master-toggle').textContent = I18N.t('start_master_btn');
+      document.getElementById('btn-master-toggle').className = 'flex-1 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 transition';
+      document.getElementById('btn-master-stop').classList.add('hidden');
+    }
+
+    function updateMasterDisplay() {
+      const h = Math.floor(liveState.masterSeconds / 3600);
+      const m = Math.floor((liveState.masterSeconds % 3600) / 60);
+      const s = liveState.masterSeconds % 60;
+      document.getElementById('master-clock-display').textContent = 
+        `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // ==========================================
+    // INDIVIDUAL GAME TIMER CONTROLS
+    // ==========================================
+    function addMinutes(mins) {
+      liveState.secondsLeft += (mins * 60);
+      clearTenSecondsWarning();
+      updateDisplay();
+    }
+
+    function subtractMinute() {
+      liveState.secondsLeft = Math.max(0, liveState.secondsLeft - 60);
+      if (liveState.secondsLeft <= 10 && liveState.secondsLeft > 0 && liveState.isRunning) {
+        triggerTenSecondsWarning();
+      } else {
+        clearTenSecondsWarning();
+      }
+      updateDisplay();
+    }
+
+    function setQuickGame(mins) {
+      liveState.secondsLeft = mins * 60;
+      liveState.gameElapsedSeconds = 0;
+      clearTenSecondsWarning();
+      updateDisplay();
+    }
+
+    function resetTimerZero() {
+      pauseTimer();
+      clearTenSecondsWarning();
+      liveState.secondsLeft = 0;
+      liveState.gameElapsedSeconds = 0;
+      document.getElementById('label-start-pause').textContent = I18N.t('start_timer');
+      document.getElementById('timer-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+      document.getElementById('timer-status-text').textContent = I18N.t('timer_ready');
+      updateDisplay();
+    }
+
+    function toggleTimer() {
+      if (liveState.isRunning) {
+        pauseTimer();
+      } else {
+        getAudioContext();
+        // If master clock isn't running yet, automatically start it too!
+        if (!liveState.isMasterRunning) {
+          startMasterClock();
+        }
+        if (liveState.secondsLeft <= 0) {
+          addMinutes(10);
+        }
+        startTimer();
+      }
+    }
+
+    function startTimer() {
+      if (liveState.isRunning) return;
+      liveState.isRunning = true;
+      getAudioContext();
+
+      liveState.intervalId = setInterval(() => {
+        if (liveState.secondsLeft > 0) {
+          liveState.secondsLeft--;
+          liveState.gameElapsedSeconds++;
+          updateDisplay();
+
+          if (liveState.secondsLeft <= 10 && liveState.secondsLeft > 0) {
+            triggerTenSecondsWarning();
+          } else {
+            clearTenSecondsWarning();
+          }
+
+          if (liveState.secondsLeft === 0) {
+            triggerWhistleAtZero();
+          }
+        } else {
+          pauseTimer();
+        }
+      }, 1000);
+
+      document.getElementById('label-start-pause').textContent = I18N.t('pause_timer');
+      document.getElementById('btn-start-pause').className = 'flex-1 py-3 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-amber-500/20 active:scale-95';
+      document.getElementById('timer-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+      document.getElementById('timer-status-text').textContent = `${getGameName().toUpperCase()} ${I18N.t('timer_in_play')}`;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function pauseTimer() {
+      liveState.isRunning = false;
+      if (liveState.intervalId) {
+        clearInterval(liveState.intervalId);
+        liveState.intervalId = null;
+      }
+      clearTenSecondsWarning();
+      document.getElementById('label-start-pause').textContent = I18N.t('resume_timer');
+      document.getElementById('btn-start-pause').className = 'flex-1 py-3 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/20 active:scale-95';
+      document.getElementById('timer-status-dot').className = 'w-2 h-2 rounded-full bg-amber-400';
+      document.getElementById('timer-status-text').textContent = I18N.t('timer_paused');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function triggerTenSecondsWarning() {
+      document.body.classList.add('red-warning-active');
+      const timerCard = document.getElementById('timer-card');
+      if (timerCard) timerCard.classList.add('red-card-flash');
+      const countdown = document.getElementById('countdown-display');
+      if (countdown) countdown.classList.add('text-red-400', 'animate-pulse');
+      const banner = document.getElementById('timer-warning-banner');
+      if (banner) banner.classList.remove('hidden');
+    }
+
+    function clearTenSecondsWarning() {
+      document.body.classList.remove('red-warning-active');
+      const timerCard = document.getElementById('timer-card');
+      if (timerCard) timerCard.classList.remove('red-card-flash');
+      const countdown = document.getElementById('countdown-display');
+      if (countdown) countdown.classList.remove('text-red-400', 'animate-pulse');
+      const banner = document.getElementById('timer-warning-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    function triggerWhistleAtZero() {
+      clearTenSecondsWarning();
+      pauseTimer();
+      playWhistleSound();
+
+      document.getElementById('timer-status-text').textContent = I18N.t('final_whistle');
+      document.getElementById('timer-status-dot').className = 'w-2 h-2 rounded-full bg-red-500';
+      document.getElementById('countdown-display').textContent = '00:00';
+      document.getElementById('countdown-subtitle').textContent = I18N.t('match_finished');
+    }
+
+    function updateDisplay() {
+      const mLeft = Math.floor(liveState.secondsLeft / 60);
+      const sLeft = liveState.secondsLeft % 60;
+      document.getElementById('countdown-display').textContent = `${mLeft.toString().padStart(2, '0')}:${sLeft.toString().padStart(2, '0')}`;
+
+      const mElap = Math.floor(liveState.gameElapsedSeconds / 60);
+      const sElap = liveState.gameElapsedSeconds % 60;
+      document.getElementById('elapsed-time-label').textContent = `${mElap.toString().padStart(2, '0')}:${sElap.toString().padStart(2, '0')} elapsed`;
+      document.getElementById('countdown-subtitle').textContent = I18N.t('min_sec_left');
+    }
+
+    function getGameName() {
+      const input = document.getElementById('live-game-name');
+      return (input && input.value.trim()) ? input.value.trim() : 'Game 1';
+    }
+
+    function incrementGameName() {
+      liveState.gameNumber++;
+      const current = getGameName();
+      const match = current.match(/(\d+)/);
+      if (match) {
+        const nextNum = parseInt(match[1]) + 1;
+        document.getElementById('live-game-name').value = current.replace(/\d+/, nextNum);
+      } else {
+        document.getElementById('live-game-name').value = `Game ${liveState.gameNumber}`;
+      }
+      document.getElementById('game-score-badge').textContent = `${getGameName()} ${I18N.t('game_score_badge')}`;
+      resetTimerZero();
+      addMinutes(10);
+      updateInGameScoreDisplay();
+    }
+
+    function endGameEarly() {
+      pauseTimer();
+      clearTenSecondsWarning();
+      const currentGame = getGameName();
+      const scoreText = document.getElementById('live-score-display').textContent;
+      
+      document.getElementById('modal-ended-title').textContent = `${currentGame} ${I18N.t('end_early_title')}`;
+      document.getElementById('modal-ended-score').textContent = `${currentGame}: ${scoreText}`;
+
+      const nextMatch = currentGame.match(/(\d+)/);
+      const nextNum = nextMatch ? parseInt(nextMatch[1]) + 1 : 2;
+      document.querySelector('#end-game-modal button').innerHTML = `<span>▶ ${I18N.t('start_next_game_modal')} (Game ${nextNum})</span>`;
+
+      document.getElementById('end-game-modal').classList.remove('hidden');
+    }
+
+    function closeEndGameModal() {
+      document.getElementById('end-game-modal').classList.add('hidden');
+    }
+
+    function startNextGameFromModal() {
+      closeEndGameModal();
+      incrementGameName();
+    }
+
+    // ==========================================
+    // REQUIREMENT 2: LOG BOTH TIMESTAMPS
+    // (game_elapsed_sec + master_session_sec)
+    // ==========================================
+    function onGoalButtonClicked() {
+      // Capture both clocks quietly!
+      liveState.capturedGameElapsed = liveState.gameElapsedSeconds;
+      liveState.capturedMasterSec = liveState.masterSeconds > 0 ? liveState.masterSeconds : liveState.gameElapsedSeconds;
+
+      const mElap = Math.floor(liveState.capturedGameElapsed / 60);
+      const sElap = liveState.capturedGameElapsed % 60;
+      const currentGame = getGameName();
+
+      document.getElementById('captured-game-badge').textContent = currentGame;
+      document.getElementById('modal-game-name').value = currentGame;
+      document.getElementById('captured-minute-label').textContent = `${mElap}:${sElap.toString().padStart(2, '0')}`;
+
+      const card = document.getElementById('goal-input-card');
+      card.classList.remove('hidden');
+
+      const scorerInput = document.getElementById('live-scorer-input');
+      scorerInput.value = '';
+      document.getElementById('live-assist-input').value = '';
+      scorerInput.focus();
+      card.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelGoalInput() {
+      document.getElementById('goal-input-card').classList.add('hidden');
+    }
+
+    function setAssistSolo() {
+      document.getElementById('live-assist-input').value = 'Solo / Unassisted';
+    }
+
+    function renderQuickChips() {
+      const scorerChips = document.getElementById('scorer-quick-chips');
+      const assistChips = document.getElementById('assist-quick-chips');
+
+      scorerChips.innerHTML = liveState.players.map(p => `
+        <button type="button" onclick="selectScorerChip('${p.name}')" class="px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800 text-[10px] font-semibold text-slate-300 hover:border-emerald-500 hover:text-emerald-400 transition">
+          #${p.jersey_number || '0'} ${p.name.split(' ')[0]}
+        </button>
+      `).join('');
+
+      assistChips.innerHTML = liveState.players.map(p => `
+        <button type="button" onclick="selectAssistChip('${p.name}')" class="px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800 text-[10px] font-semibold text-slate-300 hover:border-blue-500 hover:text-blue-400 transition">
+          #${p.jersey_number || '0'} ${p.name.split(' ')[0]}
+        </button>
+      `).join('');
+    }
+
+    function selectScorerChip(name) {
+      document.getElementById('live-scorer-input').value = name;
+      document.getElementById('live-assist-input').focus();
+    }
+
+    function selectAssistChip(name) {
+      document.getElementById('live-assist-input').value = name;
+    }
+
+    async function submitLiveGoal(e) {
+      e.preventDefault();
+      const gameName = document.getElementById('modal-game-name').value.trim() || getGameName();
+      const scorerName = document.getElementById('live-scorer-input').value.trim();
+      const assistName = document.getElementById('live-assist-input').value.trim();
+      const btn = document.getElementById('btn-confirm-live-goal');
+
+      if (!scorerName) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Saving Goal...';
+
+      try {
+        const res = await fetch('/api/live/goal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            match_id: liveState.matchId,
+            game_elapsed_sec: liveState.capturedGameElapsed,
+            master_session_sec: liveState.capturedMasterSec,
+            game_name: gameName,
+            scorer_name: scorerName,
+            assist_name: assistName,
+            notes: `Logged live during ${gameName}`
+          })
+        });
+
+        if (res.ok) {
+          cancelGoalInput();
+          await fetchMatch(liveState.matchId);
+          await fetchPlayers();
+        } else {
+          alert('Failed to log goal.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error logging goal.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>${I18N.t('log_goal_submit')}</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function updateInGameScoreDisplay() {
+      if (!liveState.match) return;
+      const currentGame = getGameName();
+      const goals = (liveState.match.goals || []).filter(g => (g.game_name || 'Game 1').toLowerCase() === currentGame.toLowerCase());
+      const count = goals.length;
+      document.getElementById('live-score-display').textContent = `${count} ${count === 1 ? 'Goal' : 'Goals'}`;
+    }
+
+    // ==========================================
+    // CANETA / NUTMEG LOGIC & CONTROLS
+    // ==========================================
+    function onNutmegButtonClicked() {
+      // Capture both clocks quietly!
+      liveState.capturedNutmegGameElapsed = liveState.gameElapsedSeconds;
+      liveState.capturedNutmegMasterSec = liveState.masterSeconds > 0 ? liveState.masterSeconds : liveState.gameElapsedSeconds;
+
+      const mElap = Math.floor(liveState.capturedNutmegGameElapsed / 60);
+      const sElap = liveState.capturedNutmegGameElapsed % 60;
+      const currentGame = getGameName();
+
+      document.getElementById('nutmeg-captured-game-badge').textContent = currentGame;
+      document.getElementById('nutmeg-modal-game-name').value = currentGame;
+      document.getElementById('nutmeg-captured-minute-label').textContent = `${mElap}:${sElap.toString().padStart(2, '0')}`;
+
+      const card = document.getElementById('nutmeg-input-card');
+      card.classList.remove('hidden');
+
+      const giverInput = document.getElementById('live-nutmeg-giver-input');
+      giverInput.value = '';
+      document.getElementById('live-nutmeg-receiver-input').value = '';
+      renderNutmegQuickChips();
+      giverInput.focus();
+      card.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelNutmegInput() {
+      document.getElementById('nutmeg-input-card').classList.add('hidden');
+    }
+
+    function renderNutmegQuickChips() {
+      const giverChips = document.getElementById('nutmeg-giver-quick-chips');
+      const receiverChips = document.getElementById('nutmeg-receiver-quick-chips');
+      if (!giverChips || !receiverChips) return;
+
+      giverChips.innerHTML = liveState.players.map(p => `
+        <button type="button" onclick="selectNutmegGiverChip('${p.name}')" class="px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800 text-[10px] font-semibold text-purple-300 hover:border-purple-500 hover:text-white transition">
+          #${p.jersey_number || '0'} ${p.name.split(' ')[0]}
+        </button>
+      `).join('');
+
+      receiverChips.innerHTML = liveState.players.map(p => `
+        <button type="button" onclick="selectNutmegReceiverChip('${p.name}')" class="px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800 text-[10px] font-semibold text-amber-300 hover:border-amber-500 hover:text-white transition">
+          #${p.jersey_number || '0'} ${p.name.split(' ')[0]}
+        </button>
+      `).join('');
+    }
+
+    function selectNutmegGiverChip(name) {
+      document.getElementById('live-nutmeg-giver-input').value = name;
+      document.getElementById('live-nutmeg-receiver-input').focus();
+    }
+
+    function selectNutmegReceiverChip(name) {
+      document.getElementById('live-nutmeg-receiver-input').value = name;
+    }
+
+    async function submitLiveNutmeg(e) {
+      e.preventDefault();
+      const gameName = document.getElementById('nutmeg-modal-game-name').value.trim() || getGameName();
+      const giverName = document.getElementById('live-nutmeg-giver-input').value.trim();
+      const receiverName = document.getElementById('live-nutmeg-receiver-input').value.trim();
+      const btn = document.getElementById('btn-confirm-live-nutmeg');
+
+      if (!giverName || !receiverName) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      try {
+        const res = await fetch('/api/live/nutmeg', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            match_id: liveState.matchId,
+            game_elapsed_sec: liveState.capturedNutmegGameElapsed,
+            master_session_sec: liveState.capturedNutmegMasterSec,
+            game_name: gameName,
+            giver_name: giverName,
+            receiver_name: receiverName,
+            notes: `Logged live during ${gameName}`
+          })
+        });
+
+        if (res.ok) {
+          cancelNutmegInput();
+          await fetchMatch(liveState.matchId);
+          await fetchPlayers();
+        } else {
+          alert('Failed to log nutmeg.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error logging nutmeg.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>🪄</span><span data-i18n="nutmeg_submit">${I18N.t('nutmeg_submit')}</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    async function deleteLiveNutmeg(nutmegId) {
+      if (!confirm('Remove this nutmeg event?')) return;
+      try {
+        const res = await fetch(`/api/nutmegs/${nutmegId}`, { method: 'DELETE' });
+        if (res.ok) {
+          await fetchMatch(liveState.matchId);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ==========================================
+    // UNIFIED MATCH TIMELINE: GOALS + CANETAS
+    // ==========================================
+    function renderLiveGoals(passedGoals) {
+      const container = document.getElementById('live-goals-timeline');
+      const countEl = document.getElementById('live-goals-count');
+      if (!container) return;
+
+      const goals = (liveState.match && liveState.match.goals) || (Array.isArray(passedGoals) ? passedGoals : []);
+      const nutmegs = (liveState.match && liveState.match.nutmegs) || [];
+
+      updateInGameScoreDisplay();
+
+      const events = [
+        ...goals.map(g => ({ ...g, eventType: 'goal', sortTime: g.timestamp_sec || 0 })),
+        ...nutmegs.map(n => ({ ...n, eventType: 'nutmeg', sortTime: n.timestamp_sec || 0 }))
+      ];
+
+      events.sort((a, b) => b.sortTime - a.sortTime);
+
+      const nutmegBadge = I18N.t('nutmeg_count_badge') || 'Canetas';
+      countEl.textContent = `${goals.length} goals • ${nutmegs.length} ${nutmegBadge.toLowerCase()}`;
+
+      if (events.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-xs py-2 text-center">Nenhum lance registrado ainda.</p>';
+        return;
+      }
+
+      const nutmeggedLabel = I18N.t('nutmegged_text') || 'deu caneta em';
+
+      container.innerHTML = events.map(ev => {
+        if (ev.eventType === 'goal') {
+          return `
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold font-mono text-[10px]">
+                  ${ev.game_name || 'Game 1'}
+                </span>
+                <div>
+                  <div class="flex items-center gap-1 flex-wrap">
+                    <span class="font-extrabold text-white">⚽ ${ev.scorer_name}</span>
+                    ${ev.assist_name ? `<span class="text-[10px] text-slate-400">(${ev.assist_name})</span>` : '<span class="text-[9px] text-slate-500 italic">Solo</span>'}
+                  </div>
+                  <p class="text-[10px] text-slate-500 font-mono">${ev.minute_display || 'Live'}</p>
+                </div>
+              </div>
+              <button onclick="deleteLiveGoal(${ev.id})" class="text-slate-500 hover:text-red-400 p-1">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-purple-500/30 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 font-bold font-mono text-[10px]">
+                  ${ev.game_name || 'Game 1'}
+                </span>
+                <div>
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-extrabold text-purple-300">🪄 ${ev.giver_name}</span>
+                    <span class="text-[10px] text-slate-400 font-medium">${nutmeggedLabel}</span>
+                    <span class="font-extrabold text-amber-300">${ev.receiver_name}</span>
+                  </div>
+                  <p class="text-[10px] text-slate-500 font-mono">${ev.minute_display || 'Live'}</p>
+                </div>
+              </div>
+              <button onclick="deleteLiveNutmeg(${ev.id})" class="text-slate-500 hover:text-red-400 p-1">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          `;
+        }
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function deleteLiveGoal(goalId) {
+      if (!confirm('Remove this goal?')) return;
+      try {
+        const res = await fetch(`/api/goals/${goalId}`, { method: 'DELETE' });
+        if (res.ok) {
+          await fetchMatch(liveState.matchId);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>

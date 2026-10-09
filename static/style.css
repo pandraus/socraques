@@ -1,0 +1,97 @@
+/* SóCraques Custom Athletics Styling */
+.nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: all 0.15s ease-in-out;
+}
+
+.nav-tab:hover {
+  color: #f8fafc;
+  background-color: #1e293b;
+}
+
+.nav-tab.active {
+  color: #047857;
+  background-color: #ecfdf5;
+}
+
+.dark .nav-tab.active {
+  color: #34d399;
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.cam-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  transition: all 0.15s ease;
+}
+
+.cam-toggle-btn:hover {
+  color: #f1f5f9;
+}
+
+.cam-toggle-btn.active {
+  color: #ffffff;
+  background-color: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Timeline Custom Scrubber */
+#timeline-scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #10b981;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+  border: 2px solid #ffffff;
+}
+
+#timeline-scrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #10b981;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+  border: 2px solid #ffffff;
+}
+
+/* Goal Timeline Pin */
+.timeline-goal-pin {
+  position: absolute;
+  transform: translateX(-50%);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.15s ease;
+}
+
+.timeline-goal-pin:hover {
+  transform: translateX(-50%) scale(1.3);
+}
+
+/* Glow animation for active moments */
+@keyframes goal-pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.pulse-goal {
+  animation: goal-pulse 2s infinite ease-in-out;
+}
