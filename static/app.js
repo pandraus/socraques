@@ -226,71 +226,182 @@ async function loadMatch(id) {
   }
 }
 
-function renderMatchGoals(goals) {
+function renderMatchGoals(passedGoals) {
   const container = document.getElementById('match-goals-list');
   const countSubtitle = document.getElementById('goal-count-subtitle');
-  countSubtitle.textContent = `${goals.length} goals recorded`;
+  if (!container) return;
+
+  const goals = (state.currentMatch && state.currentMatch.goals) || (Array.isArray(passedGoals) ? passedGoals : []);
+  const nutmegs = (state.currentMatch && state.currentMatch.nutmegs) || [];
+
+  const goalText = goals.length === 1 ? 'goal' : 'goals';
+  const nutmegText = nutmegs.length === 1 ? 'caneta' : 'canetas';
+  if (countSubtitle) {
+    countSubtitle.textContent = `${goals.length} ${goalText} • ${nutmegs.length} ${nutmegText}`;
+  }
   const scoreEl = document.getElementById('scoreboard-display');
   if (scoreEl) scoreEl.textContent = goals.length;
 
-  if (goals.length === 0) {
+  const events = [
+    ...goals.map(g => ({ ...g, eventType: 'goal', sortTime: g.timestamp_sec || 0 })),
+    ...nutmegs.map(n => ({ ...n, eventType: 'nutmeg', sortTime: n.timestamp_sec || 0 }))
+  ];
+
+  events.sort((a, b) => a.sortTime - b.sortTime);
+
+  if (events.length === 0) {
     container.innerHTML = `
       <div class="text-center py-12 text-slate-500 text-xs">
-        No goals recorded yet.<br>Click "Tag Goal" during playback or use the Sideline Controller!
+        ${window.I18N ? I18N.t('no_goals_yet') : 'No goals or canetas recorded yet.'}
       </div>
     `;
     return;
   }
 
-  container.innerHTML = goals.map(g => {
-    const hasAssist = g.assist_name && g.assist_name.trim().length > 0;
-    return `
-      <div class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/60 border border-slate-800/80 transition flex items-center justify-between gap-3 group">
-        <div class="flex items-center gap-3">
-          <button onclick="seekToGoal(${g.timestamp_sec})" class="w-9 h-9 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-500/30 transition shrink-0">
-            ${g.minute_display || formatTime(g.timestamp_sec)}
-          </button>
-          <div>
-            <div class="flex items-center gap-1.5">
-              <span class="px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 font-mono text-[9px] font-bold border border-emerald-500/30">${g.game_name || 'Game 1'}</span>
-              <span class="font-extrabold text-sm text-white hover:text-emerald-400 cursor-pointer" onclick="openPlayerProfile(${g.scorer_id})">
-                ${g.scorer_name}
-              </span>
-              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">#${g.scorer_jersey || '0'}</span>
+  const nutmeggedLabel = (window.I18N && I18N.t('nutmegged_text')) || 'deu caneta em';
+  const downloadTitle = (window.I18N && I18N.t('download_clip')) || 'Baixar Clipe de 20s (10s antes e 10s depois)';
+
+  container.innerHTML = events.map(ev => {
+    if (ev.eventType === 'goal') {
+      const hasAssist = ev.assist_name && ev.assist_name.trim().length > 0;
+      const safeName = (ev.scorer_name || 'gol').replace(/'/g, "\\'");
+      return `
+        <div class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/60 border border-slate-800/80 transition flex items-center justify-between gap-3 group">
+          <div class="flex items-center gap-3">
+            <button onclick="seekToGoal(${ev.timestamp_sec})" class="w-9 h-9 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-500/30 transition shrink-0" title="Ver no vídeo">
+              ${ev.minute_display || formatTime(ev.timestamp_sec)}
+            </button>
+            <div>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 font-mono text-[9px] font-bold border border-emerald-500/30">${ev.game_name || 'Game 1'}</span>
+                <span class="font-extrabold text-sm text-white hover:text-emerald-400 cursor-pointer" onclick="openPlayerProfile(${ev.scorer_id})">
+                  ${ev.scorer_name}
+                </span>
+                <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">#${ev.scorer_jersey || '0'}</span>
+              </div>
+              <div class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                ${hasAssist ? `<span>🎯 Assist: <strong class="text-slate-300">${ev.assist_name}</strong></span>` : `<span class="italic text-slate-500">Solo / Unassisted</span>`}
+              </div>
+              ${ev.notes ? `<p class="text-[10px] text-slate-500 mt-0.5 italic line-clamp-1">"${ev.notes}"</p>` : ''}
             </div>
-            <div class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-              ${hasAssist ? `<span>🎯 Assist: <strong class="text-slate-300">${g.assist_name}</strong></span>` : `<span class="italic text-slate-500">Solo / Unassisted</span>`}
-            </div>
-            ${g.notes ? `<p class="text-[10px] text-slate-500 mt-0.5 italic line-clamp-1">"${g.notes}"</p>` : ''}
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button onclick="seekToGoal(${ev.timestamp_sec})" title="Pular para o lance no vídeo" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-800 transition">
+              <i data-lucide="play-circle" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-download-goal-${ev.id}" onclick="downloadClip('goal', ${ev.id}, ${ev.timestamp_sec}, '${safeName}')" title="${downloadTitle}" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-800 transition">
+              <i data-lucide="download" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteGoal(${ev.id})" title="Excluir Gol" class="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-800 transition opacity-0 group-hover:opacity-100">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
           </div>
         </div>
+      `;
+    } else {
+      const safeGiver = (ev.giver_name || 'caneta').replace(/'/g, "\\'");
+      return `
+        <div class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/60 border border-purple-500/30 transition flex items-center justify-between gap-3 group">
+          <div class="flex items-center gap-3">
+            <button onclick="seekToGoal(${ev.timestamp_sec})" class="w-9 h-9 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 font-bold text-xs flex items-center justify-center border border-purple-500/30 transition shrink-0" title="Ver no vídeo">
+              ${ev.minute_display || formatTime(ev.timestamp_sec)}
+            </button>
+            <div>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-400 font-mono text-[9px] font-bold border border-purple-500/30">${ev.game_name || 'Game 1'}</span>
+                <span class="font-extrabold text-sm text-purple-300">🪄 ${ev.giver_name}</span>
+                <span class="text-[11px] text-slate-400 font-medium">${nutmeggedLabel}</span>
+                <span class="font-extrabold text-sm text-amber-300">${ev.receiver_name}</span>
+              </div>
+              ${ev.notes ? `<p class="text-[10px] text-slate-500 mt-0.5 italic line-clamp-1">"${ev.notes}"</p>` : ''}
+            </div>
+          </div>
 
-        <div class="flex items-center gap-1.5">
-          <button onclick="seekToGoal(${g.timestamp_sec})" title="Jump to goal" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-800 transition">
-            <i data-lucide="play-circle" class="w-4 h-4"></i>
-          </button>
-          ${g.clip_path ? `
-            <a href="${g.clip_path}" target="_blank" download title="Download 15s Clip" class="p-1.5 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-slate-800 transition">
+          <div class="flex items-center gap-1.5">
+            <button onclick="seekToGoal(${ev.timestamp_sec})" title="Pular para a caneta no vídeo" class="p-1.5 rounded-lg text-slate-400 hover:text-purple-400 hover:bg-slate-800 transition">
+              <i data-lucide="play-circle" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-download-nutmeg-${ev.id}" onclick="downloadClip('nutmeg', ${ev.id}, ${ev.timestamp_sec}, '${safeGiver}')" title="${downloadTitle}" class="p-1.5 rounded-lg text-slate-400 hover:text-purple-400 hover:bg-slate-800 transition">
               <i data-lucide="download" class="w-4 h-4"></i>
-            </a>
-          ` : ''}
-          <button onclick="deleteGoal(${g.id})" title="Delete Goal" class="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-800 transition opacity-0 group-hover:opacity-100">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
+            </button>
+            <button onclick="deleteNutmeg(${ev.id})" title="Excluir Caneta" class="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-800 transition opacity-0 group-hover:opacity-100">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
   }).join('');
 
   if (window.lucide) lucide.createIcons();
 }
 
+async function downloadClip(eventType, eventId, timestampSec, playerName) {
+  const btn = document.getElementById(`btn-download-${eventType}-${eventId}`);
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin text-emerald-400"></i>';
+    if (window.lucide) lucide.createIcons();
+  }
+
+  try {
+    const angle = state.activeAngle || 'a';
+    const url = `/api/clips/download?type=${encodeURIComponent(eventType)}&id=${encodeURIComponent(eventId)}&angle=${encodeURIComponent(angle)}`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || 'Nenhum vídeo carregado para esta partida ainda. Envie os vídeos em "Upload Videos" primeiro.');
+      return;
+    }
+
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    const typeLabel = eventType === 'nutmeg' ? 'caneta' : 'gol';
+    const m = Math.floor(timestampSec / 60);
+    const s = Math.floor(timestampSec % 60);
+    a.download = `socraques_${typeLabel}_${playerName.replace(/\s+/g, '_')}_${m}m${s.toString().padStart(2, '0')}s_20s.mp4`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    console.error('Download clip error:', err);
+    alert('Erro ao baixar o clipe de 20s.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+}
+
+async function deleteNutmeg(nutmegId) {
+  if (!confirm('Excluir este lance de caneta?')) return;
+  try {
+    const res = await fetch(`/api/nutmegs/${nutmegId}`, { method: 'DELETE' });
+    if (res.ok) {
+      await loadMatch(state.currentMatchId);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 function renderTimelineMarkers() {
-  if (!state.currentMatch || !state.currentMatch.goals) return;
+  if (!state.currentMatch) return;
   markersContainer.innerHTML = '';
 
   const duration = state.videoDuration || 60;
-  state.currentMatch.goals.forEach(g => {
+  const goals = state.currentMatch.goals || [];
+  const nutmegs = state.currentMatch.nutmegs || [];
+
+  goals.forEach(g => {
     const pct = Math.min(100, Math.max(0, (g.timestamp_sec / duration) * 100));
     const pin = document.createElement('div');
     pin.className = 'timeline-goal-pin';
@@ -304,6 +415,24 @@ function renderTimelineMarkers() {
     pin.onclick = (e) => {
       e.stopPropagation();
       seekToGoal(g.timestamp_sec);
+    };
+    markersContainer.appendChild(pin);
+  });
+
+  nutmegs.forEach(n => {
+    const pct = Math.min(100, Math.max(0, (n.timestamp_sec / duration) * 100));
+    const pin = document.createElement('div');
+    pin.className = 'timeline-goal-pin';
+    pin.style.left = `${pct}%`;
+    pin.title = `Caneta: ${n.giver_name} em ${n.receiver_name} (${formatTime(n.timestamp_sec)})`;
+    pin.innerHTML = `
+      <div class="w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs shadow-lg shadow-purple-500/50 border border-black font-black">
+        🪄
+      </div>
+    `;
+    pin.onclick = (e) => {
+      e.stopPropagation();
+      seekToGoal(n.timestamp_sec);
     };
     markersContainer.appendChild(pin);
   });

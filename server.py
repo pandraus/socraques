@@ -282,6 +282,126 @@ class PitchStatHandler(SimpleHTTPRequestHandler):
                     "videos_dir": VIDEOS_DIR
                 })
 
+            elif path == "/api/clips/download":
+                event_type = params.get("type", ["goal"])[0].lower()
+                event_id = int(params.get("id", [0])[0])
+                angle = params.get("angle", ["a"])[0].lower()
+                if angle not in ["a", "b"]:
+                    angle = "a"
+
+                if event_type == "nutmeg":
+                    cursor.execute("""
+                        SELECT n.*, m.video_angle_a, m.video_angle_b, m.id as match_id,
+                               g.name as giver_name, r.name as receiver_name
+                        FROM nutmegs n
+                        JOIN matches m ON n.match_id = m.id
+                        JOIN players g ON n.giver_id = g.id
+                        JOIN players r ON n.receiver_id = r.id
+                        WHERE n.id = ?
+                    """, (event_id,))
+                    row = cursor.fetchone()
+                    if not row:
+                        self.send_json({"error": "Nutmeg event not found"}, 404)
+                        return
+                    event = dict(row)
+                    timestamp_sec = float(event.get("master_session_sec") or event.get("timestamp_sec") or 0.0)
+                    clip_filename = f"caneta_m{event['match_id']}_{event_id}_{int(timestamp_sec)}s_20s_angle{angle}.mp4"
+                    player_label = event["giver_name"].replace(" ", "_")
+                    db_table = "nutmegs"
+                else:
+                    cursor.execute("""
+                        SELECT g.*, m.video_angle_a, m.video_angle_b, m.id as match_id,
+                               p.name as scorer_name
+                        FROM goals g
+                        JOIN matches m ON g.match_id = m.id
+                        JOIN players p ON g.scorer_id = p.id
+                        WHERE g.id = ?
+                    """, (event_id,))
+                    row = cursor.fetchone()
+                    if not row:
+                        self.send_json({"error": "Goal event not found"}, 404)
+                        return
+                    event = dict(row)
+                    timestamp_sec = float(event.get("master_session_sec") or event.get("timestamp_sec") or 0.0)
+                    clip_filename = f"goal_m{event['match_id']}_{event_id}_{int(timestamp_sec)}s_20s_angle{angle}.mp4"
+                    player_label = event["scorer_name"].replace(" ", "_")
+                    db_table = "goals"
+
+                # Resolve video source
+                source_rel = event["video_angle_a"] if angle == "a" else event["video_angle_b"]
+                if not source_rel and angle == "b" and event.get("video_angle_a"):
+                    source_rel = event["video_angle_a"]
+                elif not source_rel and angle == "a" and event.get("video_angle_b"):
+                    source_rel = event["video_angle_b"]
+
+                if not source_rel:
+                    video_exts = {".mp4", ".mov", ".m4v", ".webm", ".avi", ".mkv"}
+                    if os.path.exists(VIDEOS_DIR):
+                        for fname in sorted(os.listdir(VIDEOS_DIR)):
+                            if os.path.splitext(fname)[1].lower() in video_exts:
+                                source_rel = f"/videos/{fname}"
+                                break
+
+                if not source_rel:
+                    self.send_json({
+                        "error": "Nenhum vídeo carregado para esta partida ainda. Envie os vídeos em 'Upload Videos' primeiro."
+                    }, 400)
+                    return
+
+                source_path = os.path.join(STATIC_DIR, source_rel.lstrip("/"))
+                if not os.path.exists(source_path):
+                    self.send_json({"error": f"Arquivo de vídeo original não encontrado: {source_rel}"}, 404)
+                    return
+
+                clip_dest = os.path.join(CLIPS_DIR, clip_filename)
+
+                # Cut exactly 10s before and 10s after (20 seconds total)
+                if not os.path.exists(clip_dest) or os.path.getsize(clip_dest) < 1000:
+                    start_time = max(0.0, timestamp_sec - 10.0)
+                    duration = 20.0
+                    try:
+                        cmd = [
+                            FFMPEG_BIN, "-y",
+                            "-ss", str(start_time),
+                            "-i", source_path,
+                            "-t", str(duration),
+                            "-c:v", "libx264", "-preset", "ultrafast",
+                            "-c:a", "aac",
+                            "-movflags", "+faststart",
+                            clip_dest
+                        ]
+                        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        if res.returncode != 0:
+                            sys.stderr.write(f"FFmpeg error: {res.stderr.decode('utf-8', errors='ignore')}\n")
+                            self.send_json({"error": "Falha ao cortar o vídeo com FFmpeg no servidor."}, 500)
+                            return
+                        cursor.execute(f"UPDATE {db_table} SET clip_path = ? WHERE id = ?", (f"/clips/{clip_filename}", event_id))
+                        conn.commit()
+                    except Exception as e:
+                        sys.stderr.write(f"Clip generation error: {e}\n")
+                        self.send_json({"error": f"Erro gerando clipe: {str(e)}"}, 500)
+                        return
+
+                file_size = os.path.getsize(clip_dest)
+                m_disp = (event.get("minute_display") or f"{int(timestamp_sec)}s").replace(":", "m")
+                tag_name = "caneta" if event_type == "nutmeg" else "gol"
+                download_name = f"socraques_{tag_name}_{player_label}_{m_disp}s_20s.mp4"
+
+                self.send_response(200)
+                self.send_header("Content-Type", "video/mp4")
+                self.send_header("Content-Disposition", f'attachment; filename="{download_name}"')
+                self.send_header("Content-Length", str(file_size))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+
+                with open(clip_dest, "rb") as f:
+                    while True:
+                        buf = f.read(65536)
+                        if not buf:
+                            break
+                        self.wfile.write(buf)
+                return
+
             else:
                 self.send_json({"error": "Not found"}, 404)
         finally:
@@ -753,7 +873,7 @@ class PitchStatHandler(SimpleHTTPRequestHandler):
 
     def generate_goal_clip(self, match_id, timestamp_sec, angle):
         start_time = max(0.0, timestamp_sec - 10.0)
-        duration = 15.0
+        duration = 20.0
 
         conn = get_db()
         cursor = conn.cursor()
